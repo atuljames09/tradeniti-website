@@ -1641,27 +1641,40 @@ let MAIN_PAGE_INDICES = [
   { name: 'NIFTY COMMODITIES', value: 8624.30, change: 54.20, changePct: 0.63, constituents: 30 }
 ];
 
-let MAIN_PAGE_GAINERS = [
-  { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd.', price: 924.80, change: 22.60, changePct: 2.50, high52: 1065.00, low52: 624.85, volume: '15.48M', cap: '₹3.0L Cr', sector: 'Auto' },
-  { symbol: 'POWERGRID', name: 'Power Grid Corp of India', price: 342.80, change: 5.60, changePct: 1.66, high52: 366.25, low52: 249.65, volume: '11.23M', cap: '₹3.2L Cr', sector: 'Utilities' },
-  { symbol: 'INFY', name: 'Infosys Limited', price: 1842.60, change: 28.90, changePct: 1.59, high52: 1976.00, low52: 1358.35, volume: '6.32M', cap: '₹7.7L Cr', sector: 'IT' },
-  { symbol: 'WIPRO', name: 'Wipro Limited', price: 548.75, change: 8.45, changePct: 1.56, high52: 584.00, low52: 390.00, volume: '4.56M', cap: '₹2.9L Cr', sector: 'IT' },
-  { symbol: 'ADANIPORTS', name: 'Adani Ports & SEZ', price: 1412.60, change: 18.90, changePct: 1.36, high52: 1621.00, low52: 1016.30, volume: '4.12M', cap: '₹3.0L Cr', sector: 'Infra' },
-  { symbol: 'LTIM', name: 'LTIMindtree Limited', price: 5823.50, change: 78.30, changePct: 1.36, high52: 6767.00, low52: 4598.00, volume: '890K', cap: '₹1.7L Cr', sector: 'IT' },
-  { symbol: 'MARUTI', name: 'Maruti Suzuki India', price: 12548.00, change: 158.00, changePct: 1.27, high52: 13680.00, low52: 9888.00, volume: '780K', cap: '₹3.8L Cr', sector: 'Auto' },
-  { symbol: 'TITAN', name: 'Titan Company Limited', price: 3612.80, change: 42.50, changePct: 1.19, high52: 3886.00, low52: 2834.45, volume: '1.98M', cap: '₹3.2L Cr', sector: 'Consumer' }
+let MARKET_STOCKS_MASTER = [
+  { symbol: 'LT', name: 'Larsen & Toubro Ltd.', sector: 'Infra', volume: '4.8M', price: 3831.80, change: 166.50, changePct: 4.55, high52: 3915.00, low52: 2872.00, cap: 'â‚¹5.2L Cr' },
+  { symbol: 'SBIN', name: 'State Bank of India', sector: 'Banking', volume: '22.4M', price: 953.15, change: 8.05, changePct: 0.85, high52: 954.35, low52: 543.00, cap: 'â‚¹8.5L Cr' },
+  { symbol: 'MARUTI', name: 'Maruti Suzuki India', sector: 'Auto', volume: '780K', price: 11522.00, change: 72.00, changePct: 0.63, high52: 13680.00, low52: 9888.00, cap: 'â‚¹3.6L Cr' },
+  { symbol: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', sector: 'Pharma', volume: '3.21M', price: 1747.00, change: 7.00, changePct: 0.40, high52: 1960.00, low52: 1345.00, cap: 'â‚¹4.2L Cr' },
+  { symbol: 'RELIANCE', name: 'Reliance Industries', sector: 'Energy', volume: '11.2M', price: 1200.00, change: 3.80, changePct: 0.32, high52: 1608.00, low52: 1110.00, cap: 'â‚¹16.2L Cr' },
+  { symbol: 'NTPC', name: 'NTPC Limited', sector: 'Utilities', volume: '14.2M', price: 301.15, change: -0.65, changePct: -0.22, high52: 435.00, low52: 290.00, cap: 'â‚¹2.9L Cr' },
+  { symbol: 'KOTAKBANK', name: 'Kotak Mahindra Bank', sector: 'Banking', volume: '4.8M', price: 441.05, change: -1.45, changePct: -0.33, high52: 502.00, low52: 390.00, cap: 'â‚¹3.7L Cr' },
+  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd.', sector: 'Banking', volume: '18.5M', price: 677.10, change: -3.10, changePct: -0.46, high52: 942.00, low52: 669.00, cap: 'â‚¹10.3L Cr' },
+  { symbol: 'COALINDIA', name: 'Coal India Limited', sector: 'Mining', volume: '8.64M', price: 395.80, change: -2.20, changePct: -0.55, high52: 541.00, low52: 372.75, cap: 'â‚¹2.4L Cr' },
+  { symbol: 'AXISBANK', name: 'Axis Bank Limited', sector: 'Banking', volume: '9.2M', price: 1207.40, change: -12.60, changePct: -1.03, high52: 1339.00, low52: 980.00, cap: 'â‚¹3.7L Cr' },
+  { symbol: 'WIPRO', name: 'Wipro Limited', sector: 'IT', volume: '4.56M', price: 184.61, change: -2.39, changePct: -1.28, high52: 300.00, low52: 180.00, cap: 'â‚¹1.9L Cr' },
+  { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', sector: 'Telecom', volume: '6.4M', price: 1951.90, change: -26.90, changePct: -1.36, high52: 2020.00, low52: 1100.00, cap: 'â‚¹11.1L Cr' },
+  { symbol: 'TITAN', name: 'Titan Company Limited', sector: 'Consumer', volume: '1.98M', price: 4304.70, change: -61.20, changePct: -1.40, high52: 4400.00, low52: 2834.00, cap: 'â‚¹3.8L Cr' },
+  { symbol: 'ICICIBANK', name: 'ICICI Bank Limited', sector: 'Banking', volume: '12.8M', price: 1367.30, change: -19.60, changePct: -1.41, high52: 1480.00, low52: 1187.00, cap: 'â‚¹9.6L Cr' },
+  { symbol: 'ITC', name: 'ITC Limited', sector: 'FMCG', volume: '15.6M', price: 255.80, change: -4.20, changePct: -1.62, high52: 310.00, low52: 240.00, cap: 'â‚¹3.2L Cr' },
+  { symbol: 'TCS', name: 'Tata Consultancy Services', sector: 'IT', volume: '2.15M', price: 2428.40, change: -68.50, changePct: -2.74, high52: 3000.00, low52: 2400.00, cap: 'â‚¹8.8L Cr' },
+  { symbol: 'INFY', name: 'Infosys Limited', sector: 'IT', volume: '6.32M', price: 1111.05, change: -52.00, changePct: -4.47, high52: 1400.00, low52: 1100.00, cap: 'â‚¹4.6L Cr' }
 ];
 
-let MAIN_PAGE_LOSERS = [
-  { symbol: 'COALINDIA', name: 'Coal India Limited', price: 468.35, change: -4.20, changePct: -0.89, high52: 541.00, low52: 372.75, volume: '8.64M', cap: '₹2.9L Cr', sector: 'Mining' },
-  { symbol: 'IDFCFIRSTB', name: 'IDFC First Bank Ltd.', price: 65.00, change: -0.50, changePct: -0.76, high52: 91.60, low52: 51.50, volume: '38.0M', cap: '₹0.5L Cr', sector: 'Banking' },
-  { symbol: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', price: 1764.25, change: -12.40, changePct: -0.70, high52: 1960.00, low52: 1345.00, volume: '3.21M', cap: '₹4.2L Cr', sector: 'Pharma' },
-  { symbol: 'NESTLEIND', name: 'Nestle India Limited', price: 2278.45, change: -15.30, changePct: -0.67, high52: 2778.00, low52: 2100.65, volume: '345K', cap: '₹2.2L Cr', sector: 'FMCG' },
-  { symbol: 'INDUSINDBK', name: 'IndusInd Bank Limited', price: 1350.00, change: -8.20, changePct: -0.60, high52: 1694.50, low52: 966.00, volume: '6.50M', cap: '₹1.0L Cr', sector: 'Banking' },
-  { symbol: 'BAJFINANCE', name: 'Bajaj Finance Limited', price: 7892.30, change: -45.60, changePct: -0.57, high52: 8192.00, low52: 6187.80, volume: '1.25M', cap: '₹4.7L Cr', sector: 'NBFC' },
-  { symbol: 'DRREDDY', name: "Dr. Reddy's Laboratories", price: 6892.40, change: -38.60, changePct: -0.56, high52: 7499.00, low52: 5447.00, volume: '678K', cap: '₹1.1L Cr', sector: 'Pharma' },
-  { symbol: 'TCS', name: 'Tata Consultancy Services', price: 4127.80, change: -18.60, changePct: -0.45, high52: 4592.25, low52: 3311.00, volume: '2.15M', cap: '₹15.0L Cr', sector: 'IT' }
-];
+let MAIN_PAGE_GAINERS = [];
+let MAIN_PAGE_LOSERS = [];
+
+function updateGainersAndLosersFromMaster() {
+  const gList = MARKET_STOCKS_MASTER.filter(s => s.changePct >= 0)
+    .sort((a, b) => b.changePct - a.changePct);
+
+  const lList = MARKET_STOCKS_MASTER.filter(s => s.changePct < 0)
+    .sort((a, b) => a.changePct - b.changePct);
+
+  MAIN_PAGE_GAINERS = gList.length > 0 ? gList.slice(0, 8) : MARKET_STOCKS_MASTER.slice(0, 8);
+  MAIN_PAGE_LOSERS = lList.length > 0 ? lList.slice(0, 8) : MARKET_STOCKS_MASTER.slice(-8);
+}
+updateGainersAndLosersFromMaster();
 
 function initMainPageDashboard() {
   const clockEl = document.getElementById('dashLiveClock');
@@ -1783,33 +1796,50 @@ function initMainPageDashboard() {
     }
   }
 
-  async function fetchLiveQuotesForMainPage() {
-    const symbols = ['LT', 'MARUTI', 'SBIN', 'RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK', 'TITAN', 'COALINDIA', 'WIPRO', 'ITC', 'BHARTIARTL', 'AXISBANK', 'SUNPHARMA'];
-    for (const sym of symbols) {
+    async function fetchLiveQuotesForMainPage() {
+    const symbols = MARKET_STOCKS_MASTER.map(s => s.symbol);
+    const fetches = symbols.map(async (sym) => {
       try {
         const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/quote?symbol=' + encodeURIComponent(sym));
-        if (!res.ok) continue;
+        if (!res.ok) return;
         const data = await res.json();
         if (data && data.priceInfo && data.priceInfo.lastPrice) {
           const ltp = data.priceInfo.lastPrice;
           const chg = data.priceInfo.change || 0;
           const pchg = data.priceInfo.pChange !== undefined ? data.priceInfo.pChange : 0;
 
-          const g = MAIN_PAGE_GAINERS.find(s => s.symbol === sym);
-          if (g) { g.price = ltp; g.change = chg; g.changePct = pchg; }
-
-          const l = MAIN_PAGE_LOSERS.find(s => s.symbol === sym);
-          if (l) { l.price = ltp; l.change = chg; l.changePct = pchg; }
+          const stock = MARKET_STOCKS_MASTER.find(s => s.symbol === sym);
+          if (stock) {
+            stock.price = ltp;
+            stock.change = chg;
+            stock.changePct = pchg;
+          }
 
           if (typeof SCREENER_STOCKS !== 'undefined') {
             const sc = SCREENER_STOCKS.find(s => s.symbol === sym);
-            if (sc) { sc.price = ltp; sc.change = pchg; }
+            if (sc) {
+              sc.price = ltp;
+              sc.change = pchg;
+            }
           }
         }
       } catch (_) {}
-    }
+    });
+
+    await Promise.allSettled(fetches);
+
+    // Dynamically sort into Gainers & Losers
+    updateGainersAndLosersFromMaster();
     renderLists();
     if (typeof renderScreenerTable === 'function') renderScreenerTable();
+
+    // Update real-time sync label with live timestamp
+    const syncDot = document.getElementById('glLiveSyncTag');
+    if (syncDot) {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      syncDot.innerHTML = '<span class="pulse-dot"></span> Live Tick Sync &bull; ' + timeStr;
+    }
   }
 
   // Initial live market pull
