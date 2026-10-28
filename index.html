@@ -1242,7 +1242,12 @@
   <section class="section" id="screener">
     <div class="container">
       <div class="section-header">
-        <span class="badge badge-primary section-tag">FULL MARKET INTELLIGENCE</span>
+        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px;">
+          <span class="badge badge-primary section-tag" style="margin-bottom:0;">FULL MARKET INTELLIGENCE</span>
+          <span id="screenerLiveSyncTag" class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 8px;">
+            <span class="pulse-dot"></span> Live Tick Sync
+          </span>
+        </div>
         <h2 class="section-title">Real-Time Market Screener (360+ Stocks)</h2>
         <p class="section-description">
           Instantly filter Indian equities by technical confluence score, price change, and 52-week high/low proximity. Sort any column to discover high-conviction swing setups in seconds.
@@ -1279,6 +1284,16 @@
               <!-- Rendered via main.js -->
             </tbody>
           </table>
+        </div>
+
+        <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 16px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+          <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            <span>Displaying High-Liquidity Constituents &bull; Live NSE Ticks via Vercel Proxy</span>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="if (typeof openScreenerModal === 'function') openScreenerModal();" style="padding: 7px 16px; font-size: 0.82rem; font-weight: 750; display: inline-flex; align-items: center; gap: 7px; border-radius: var(--radius-sm); cursor: pointer;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+            <span>Launch Full 360+ Stock Screener</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1382,6 +1397,16 @@
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 16px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+          <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+            <span>Displaying High-Liquidity Constituents &bull; Live NSE Ticks via Vercel Proxy</span>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="if (typeof openScreenerModal === 'function') openScreenerModal();" style="padding: 7px 16px; font-size: 0.82rem; font-weight: 750; display: inline-flex; align-items: center; gap: 7px; border-radius: var(--radius-sm); cursor: pointer;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+            <span>Launch Full 360+ Stock Screener</span>
+          </button>
         </div>
       </div>
     </div>
