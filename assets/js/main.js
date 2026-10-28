@@ -1390,21 +1390,19 @@ function initAuth() {
     const wlSec = document.getElementById('watchlist-page');
     const smcSec = document.getElementById('smc-page');
     const newsSec = document.getElementById('news-page');
-    const pricingSec = document.getElementById('pricing');
     const navLinksList = document.getElementById('navLinksList');
     const mobileNavDrawer = document.getElementById('mobileMenuDrawer');
 
+    // On authenticated terminal, keep authDashboard visible and guestLanding hidden
+    if (authDashboard) authDashboard.style.display = 'block';
+    if (guestLanding) guestLanding.style.display = 'none';
+
     if (tab === 'main') {
-      if (authDashboard) authDashboard.style.display = 'block';
-      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'block';
       if (wlSec) wlSec.style.display = 'none';
       if (smcSec) smcSec.style.display = 'none';
       if (newsSec) newsSec.style.display = 'none';
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'watchlist') {
-      if (authDashboard) authDashboard.style.display = 'block';
-      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'block';
       if (smcSec) smcSec.style.display = 'none';
@@ -1412,10 +1410,7 @@ function initAuth() {
       if (window.renderActiveWatchlist) {
         window.renderActiveWatchlist();
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'smc') {
-      if (authDashboard) authDashboard.style.display = 'block';
-      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'none';
       if (smcSec) smcSec.style.display = 'block';
@@ -1423,22 +1418,13 @@ function initAuth() {
       if (window.renderSmcModule) {
         window.renderSmcModule();
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'news') {
-      if (authDashboard) authDashboard.style.display = 'block';
-      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'none';
       if (smcSec) smcSec.style.display = 'none';
       if (newsSec) newsSec.style.display = 'block';
       if (window.renderNewsModule) {
         window.renderNewsModule();
-      }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else if (tab === 'pricing') {
-      if (guestLanding) guestLanding.style.display = 'block';
-      if (pricingSec) {
-        pricingSec.scrollIntoView({ behavior: 'smooth' });
       }
     }
 
@@ -1462,9 +1448,11 @@ function initAuth() {
         }
       });
     }
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // RENDER NAVBAR AUTH STATE & TOGGLE MAIN PAGE / WATCHLIST / SMC / NEWS VS INTRODUCTION VIEWS
+  // RENDER NAVBAR AUTH STATE & TOGGLE GUEST FIRST PAGE VS AUTHENTICATED TRADING DASHBOARD
   window.renderAuthState = renderAuthState;
   function renderAuthState() {
     const user = getCurrentUser();
@@ -1479,81 +1467,83 @@ function initAuth() {
 
     if (!authWrapper) return;
 
-    // Both Authenticated and Guest sessions default to the full Trade Niti terminal dashboard
-    if (authDashboard) authDashboard.style.display = 'block';
-    if (guestLanding) guestLanding.style.display = 'none';
+    if (user) {
+      // =========================================================================
+      // 1. SIGNED-IN / AUTHENTICATED STATE:
+      // Show full Trade Niti terminal dashboard (Main Page, Watchlist, SMC, News)
+      // Hide features introduction, overview, pricing cards, and FAQ completely
+      // =========================================================================
+      if (authDashboard) authDashboard.style.display = 'block';
+      if (guestLanding) guestLanding.style.display = 'none';
 
-    // Toggle views between Main Page, Watchlist, Stock Monitoring Center (SMC), and News
-    const mainSec = document.getElementById('main-page');
-    const wlSec = document.getElementById('watchlist-page');
-    const smcSec = document.getElementById('smc-page');
-    const newsSec = document.getElementById('news-page');
-    if (currentAuthTab === 'main') {
-      if (mainSec) mainSec.style.display = 'block';
-      if (wlSec) wlSec.style.display = 'none';
-      if (smcSec) smcSec.style.display = 'none';
-      if (newsSec) newsSec.style.display = 'none';
-    } else if (currentAuthTab === 'watchlist') {
-      if (mainSec) mainSec.style.display = 'none';
-      if (wlSec) wlSec.style.display = 'block';
-      if (smcSec) smcSec.style.display = 'none';
-      if (newsSec) newsSec.style.display = 'none';
-      if (window.renderActiveWatchlist) window.renderActiveWatchlist();
-    } else if (currentAuthTab === 'smc') {
-      if (mainSec) mainSec.style.display = 'none';
-      if (wlSec) wlSec.style.display = 'none';
-      if (smcSec) smcSec.style.display = 'block';
-      if (newsSec) newsSec.style.display = 'none';
-      if (window.renderSmcModule) window.renderSmcModule();
-    } else if (currentAuthTab === 'news') {
-      if (mainSec) mainSec.style.display = 'none';
-      if (wlSec) wlSec.style.display = 'none';
-      if (smcSec) smcSec.style.display = 'none';
-      if (newsSec) newsSec.style.display = 'block';
-      if (window.renderNewsModule) window.renderNewsModule();
-    }
+      // Toggle active view between Main Page, Watchlist, SMC, and News
+      const mainSec = document.getElementById('main-page');
+      const wlSec = document.getElementById('watchlist-page');
+      const smcSec = document.getElementById('smc-page');
+      const newsSec = document.getElementById('news-page');
+      if (currentAuthTab === 'main') {
+        if (mainSec) mainSec.style.display = 'block';
+        if (wlSec) wlSec.style.display = 'none';
+        if (smcSec) smcSec.style.display = 'none';
+        if (newsSec) newsSec.style.display = 'none';
+      } else if (currentAuthTab === 'watchlist') {
+        if (mainSec) mainSec.style.display = 'none';
+        if (wlSec) wlSec.style.display = 'block';
+        if (smcSec) smcSec.style.display = 'none';
+        if (newsSec) newsSec.style.display = 'none';
+        if (window.renderActiveWatchlist) window.renderActiveWatchlist();
+      } else if (currentAuthTab === 'smc') {
+        if (mainSec) mainSec.style.display = 'none';
+        if (wlSec) wlSec.style.display = 'none';
+        if (smcSec) smcSec.style.display = 'block';
+        if (newsSec) newsSec.style.display = 'none';
+        if (window.renderSmcModule) window.renderSmcModule();
+      } else if (currentAuthTab === 'news') {
+        if (mainSec) mainSec.style.display = 'none';
+        if (wlSec) wlSec.style.display = 'none';
+        if (smcSec) smcSec.style.display = 'none';
+        if (newsSec) newsSec.style.display = 'block';
+        if (window.renderNewsModule) window.renderNewsModule();
+      }
 
-    // Update navbar menus: 4 Core Menus + Pricing & Plans
-    if (navLinksList) {
-      navLinksList.innerHTML = `
-        <li><a href="#main-page" class="nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
-        <li><a href="#watchlist-page" class="nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
-        <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
-        <li><a href="#news-page" class="nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
-        <li><a href="#pricing" class="nav-link ${currentAuthTab === 'pricing' ? 'active' : ''}" data-view="pricing" id="navPricingLink">Pricing &amp; Plans</a></li>
-      `;
-      navLinksList.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-          e.preventDefault();
-          const view = link.getAttribute('data-view');
-          window.switchAuthTab(view);
-        });
-      });
-    }
-
-    if (mobileNavDrawer) {
-      const mobileNavUl = mobileNavDrawer.querySelector('.mobile-nav-links');
-      if (mobileNavUl) {
-        mobileNavUl.innerHTML = `
-          <li><a href="#main-page" class="mobile-nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
-          <li><a href="#watchlist-page" class="mobile-nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
-          <li><a href="#smc-page" class="mobile-nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
-          <li><a href="#news-page" class="mobile-nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
-          <li><a href="#pricing" class="mobile-nav-link ${currentAuthTab === 'pricing' ? 'active' : ''}" data-view="pricing" id="mobilePricingLink">Pricing &amp; Plans</a></li>
+      // Authenticated Navbar: ONLY the 4 Core Menus (No pricing/overview as requested)
+      if (navLinksList) {
+        navLinksList.innerHTML = `
+          <li><a href="#main-page" class="nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
+          <li><a href="#watchlist-page" class="nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
+          <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
+          <li><a href="#news-page" class="nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
         `;
-        mobileNavUl.querySelectorAll('.mobile-nav-link').forEach(link => {
+        navLinksList.querySelectorAll('.nav-link').forEach(link => {
           link.addEventListener('click', (e) => {
             e.preventDefault();
             const view = link.getAttribute('data-view');
             window.switchAuthTab(view);
-            mobileNavDrawer.classList.remove('active');
           });
         });
       }
-    }
 
-    if (user) {
-      // 1. LOGGED-IN STATE: Show User Pill & Logout
+      if (mobileNavDrawer) {
+        const mobileNavUl = mobileNavDrawer.querySelector('.mobile-nav-links');
+        if (mobileNavUl) {
+          mobileNavUl.innerHTML = `
+            <li><a href="#main-page" class="mobile-nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
+            <li><a href="#watchlist-page" class="mobile-nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
+            <li><a href="#smc-page" class="mobile-nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
+            <li><a href="#news-page" class="mobile-nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
+          `;
+          mobileNavUl.querySelectorAll('.mobile-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+              e.preventDefault();
+              const view = link.getAttribute('data-view');
+              window.switchAuthTab(view);
+              mobileNavDrawer.classList.remove('active');
+            });
+          });
+        }
+      }
+
+      // Signed-in User Pill & Logout Button
       const initial = user.initial || (user.fullName ? user.fullName.charAt(0).toUpperCase() : 'T');
       const displayName = user.fullName || user.username || 'Trader';
       const bgColor = user.color || '#2563EB';
@@ -1589,12 +1579,81 @@ function initAuth() {
           if (logoutModal) logoutModal.classList.add('active');
         });
       }
+
     } else {
-      // 2. GUEST STATE: Show Sign In & Register buttons
+      // =========================================================================
+      // 2. WITHOUT SIGN-IN / GUEST STATE (First Page):
+      // Show Features Introduction, Overview, Plan & Pricing, and FAQs
+      // Hide all live trading dashboard features (Main Page, Watchlist, SMC, News)
+      // =========================================================================
+      if (authDashboard) authDashboard.style.display = 'none';
+      if (guestLanding) guestLanding.style.display = 'block';
+
+      // Hide dashboard sections
+      const wlSec = document.getElementById('watchlist-page');
+      if (wlSec) wlSec.style.display = 'none';
+      const smcSec = document.getElementById('smc-page');
+      if (smcSec) smcSec.style.display = 'none';
+      const newsSec = document.getElementById('news-page');
+      if (newsSec) newsSec.style.display = 'none';
+
+      // Guest Navbar Menus: Introduction, Features, Screener, Pricing & Plans, FAQ
+      if (navLinksList) {
+        navLinksList.innerHTML = `
+          <li><a href="#introduction" class="nav-link active">Introduction</a></li>
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#screener" class="nav-link">Screener</a></li>
+          <li><a href="#pricing" class="nav-link" id="navPricingLink">Pricing &amp; Plans</a></li>
+          <li><a href="#faq" class="nav-link">FAQ</a></li>
+        `;
+        // Attach smooth scroll listeners to guest nav links
+        navLinksList.querySelectorAll('.nav-link').forEach(link => {
+          link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            if (href && href.startsWith('#')) {
+              e.preventDefault();
+              const target = document.querySelector(href);
+              if (target) {
+                target.scrollIntoView({ behavior: 'smooth' });
+                navLinksList.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+              }
+            }
+          });
+        });
+      }
+
+      if (mobileNavDrawer) {
+        const mobileNavUl = mobileNavDrawer.querySelector('.mobile-nav-links');
+        if (mobileNavUl) {
+          mobileNavUl.innerHTML = `
+            <li><a href="#introduction" class="mobile-nav-link active">Introduction</a></li>
+            <li><a href="#features" class="mobile-nav-link">Features</a></li>
+            <li><a href="#screener" class="mobile-nav-link">Screener</a></li>
+            <li><a href="#pricing" class="mobile-nav-link" id="mobilePricingLink">Pricing &amp; Plans</a></li>
+            <li><a href="#faq" class="mobile-nav-link">FAQ</a></li>
+          `;
+          mobileNavUl.querySelectorAll('.mobile-nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+              const href = link.getAttribute('href');
+              if (href && href.startsWith('#')) {
+                e.preventDefault();
+                const target = document.querySelector(href);
+                if (target) {
+                  target.scrollIntoView({ behavior: 'smooth' });
+                  mobileNavDrawer.classList.remove('active');
+                }
+              }
+            });
+          });
+        }
+      }
+
+      // Guest Auth Buttons: [ Sign In ] [ Register ]
       authWrapper.innerHTML = `
         <div class="auth-btn-group" style="display:flex; align-items:center; gap:8px;">
           <button id="authBtn" class="btn-primary" style="padding:9px 18px; font-size:0.88rem;">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="9" y2="12"/></svg>
             <span>Sign In</span>
           </button>
           <button id="navRegisterBtn" class="btn-secondary" style="padding:9px 16px; font-size:0.88rem;">
@@ -2089,11 +2148,7 @@ function initMainPageDashboard() {
    11. Header Navigation ScrollSpy & Active Indicator
    ========================================================================== */
 function initScrollSpy() {
-  const sections = [
-    'main-page',
-    'watchlist-page',
-    'smc-page',
-    'news-page',
+  const guestSections = [
     'introduction',
     'features',
     'swing-engine',
@@ -2101,35 +2156,51 @@ function initScrollSpy() {
     'smc-radar',
     'screener',
     'fiidii',
+    'app-tour',
+    'pricing',
     'faq'
   ];
-
-  const desktopLinks = document.querySelectorAll('.nav-link');
-  const mobileLinks = document.querySelectorAll('.mobile-nav-link');
 
   function updateActiveLink() {
     const desktopLinks = document.querySelectorAll('.nav-link');
     const mobileLinks = document.querySelectorAll('.mobile-nav-link');
     const scrollPos = window.scrollY + 140;
     const authDashboard = document.getElementById('authDashboardView');
-    const isAuth = authDashboard && authDashboard.style.display !== 'none';
-    let currentId = 'main-page';
+    const isAuth = Boolean(authDashboard && authDashboard.style.display !== 'none');
+
     if (isAuth) {
-      if (window.currentAuthTab === 'smc') currentId = 'smc-page';
-      else if (window.currentAuthTab === 'watchlist') currentId = 'watchlist-page';
-      else if (window.currentAuthTab === 'news') currentId = 'news-page';
-      else currentId = 'main-page';
+      let currentTab = window.currentAuthTab || 'main';
+      desktopLinks.forEach(link => {
+        if (link.getAttribute('data-view') === currentTab) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+      mobileLinks.forEach(link => {
+        if (link.getAttribute('data-view') === currentTab) {
+          link.classList.add('active');
+        } else {
+          link.classList.remove('active');
+        }
+      });
+      return;
     }
 
-    if (!isAuth) {
-      for (let i = sections.length - 1; i >= 0; i--) {
-        const id = sections[i];
-        if (id === 'main-page') continue;
-        const el = document.getElementById(id);
-        if (el && el.offsetParent !== null && scrollPos >= el.offsetTop - 50) {
+    // Guest Landing page scroll spy
+    let currentId = 'introduction';
+    for (let i = guestSections.length - 1; i >= 0; i--) {
+      const id = guestSections[i];
+      const el = document.getElementById(id);
+      if (el && el.offsetParent !== null && scrollPos >= el.offsetTop - 50) {
+        if (id === 'swing-engine' || id === 'ema-collide' || id === 'smc-radar' || id === 'app-tour') {
+          currentId = 'features';
+        } else if (id === 'fiidii') {
+          currentId = 'screener';
+        } else {
           currentId = id;
-          break;
         }
+        break;
       }
     }
 
@@ -2155,10 +2226,6 @@ function initScrollSpy() {
   window.addEventListener('scroll', updateActiveLink, { passive: true });
   updateActiveLink();
 }
-
-/* ==========================================================================
-   12. Mobile Hamburger Menu Toggle Drawer
-   ========================================================================== */
 function initMobileMenu() {
   const toggleBtn = document.getElementById('mobileMenuToggle');
   const drawer = document.getElementById('mobileMenuDrawer');
@@ -4632,6 +4699,13 @@ function initSidebarDrawer() {
     navFiiDii.addEventListener('click', (e) => {
       e.preventDefault();
       closeSidebar();
+      if (!getCurrentUser()) {
+        if (typeof showToast === 'function') {
+          showToast('Please Sign In to access FII/DII Daily Activity.', 'ðŸ”’');
+        }
+        if (typeof openAuthModal === 'function') openAuthModal('signin');
+        return;
+      }
       openFiiDiiModal();
     });
   }
@@ -4644,6 +4718,13 @@ function initSidebarDrawer() {
     navScreener.addEventListener('click', (e) => {
       e.preventDefault();
       closeSidebar();
+      if (!getCurrentUser()) {
+        if (typeof showToast === 'function') {
+          showToast('Please Sign In to access 360+ Market Screener.', 'ðŸ”’');
+        }
+        if (typeof openAuthModal === 'function') openAuthModal('signin');
+        return;
+      }
       if (typeof window.openScreenerModal === 'function') {
         window.openScreenerModal();
       }
@@ -4670,6 +4751,13 @@ function initSidebarDrawer() {
     navEmaCollide.addEventListener('click', (e) => {
       e.preventDefault();
       closeSidebar();
+      if (!getCurrentUser()) {
+        if (typeof showToast === 'function') {
+          showToast('Please Sign In to access EMA-9/EMA-21 Collide Method.', 'ðŸ”’');
+        }
+        if (typeof openAuthModal === 'function') openAuthModal('signin');
+        return;
+      }
       if (typeof window.openEmaCollideModal === 'function') {
         window.openEmaCollideModal();
       } else if (emaCollideModal) {

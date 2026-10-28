@@ -144,14 +144,14 @@
         </a>
       </div>
 
-      <!-- Center: Navigation Dock (4 Primary Menus + Pricing & Plans) -->
+      <!-- Center: Navigation Dock (First Page: Features & Pricing Overview) -->
       <div class="nav-center-dock">
         <ul class="nav-links" id="navLinksList">
-          <li><a href="#main-page" class="nav-link active" data-view="main">Main Page</a></li>
-          <li><a href="#watchlist-page" class="nav-link" data-view="watchlist">Watchlist</a></li>
-          <li><a href="#smc-page" class="nav-link" data-view="smc">Stock Monitoring Center (SMC)</a></li>
-          <li><a href="#news-page" class="nav-link" data-view="news">News</a></li>
-          <li><a href="#pricing" class="nav-link" data-view="pricing" id="navPricingLink">Pricing &amp; Plans</a></li>
+          <li><a href="#introduction" class="nav-link active">Introduction</a></li>
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#screener" class="nav-link">Screener</a></li>
+          <li><a href="#pricing" class="nav-link" id="navPricingLink">Pricing &amp; Plans</a></li>
+          <li><a href="#faq" class="nav-link">FAQ</a></li>
         </ul>
       </div>
 
@@ -184,11 +184,11 @@
     <!-- Mobile Slide-Down Menu Drawer -->
     <div class="mobile-menu-drawer" id="mobileMenuDrawer">
       <ul class="mobile-nav-links">
-        <li><a href="#main-page" class="mobile-nav-link active" data-view="main">Main Page</a></li>
-        <li><a href="#watchlist-page" class="mobile-nav-link" data-view="watchlist">Watchlist</a></li>
-        <li><a href="#smc-page" class="mobile-nav-link" data-view="smc">Stock Monitoring Center (SMC)</a></li>
-        <li><a href="#news-page" class="mobile-nav-link" data-view="news">News</a></li>
-        <li><a href="#pricing" class="mobile-nav-link" data-view="pricing" id="mobilePricingLink">Pricing &amp; Plans</a></li>
+        <li><a href="#introduction" class="mobile-nav-link active">Introduction</a></li>
+        <li><a href="#features" class="mobile-nav-link">Features</a></li>
+        <li><a href="#screener" class="mobile-nav-link">Screener</a></li>
+        <li><a href="#pricing" class="mobile-nav-link" id="mobilePricingLink">Pricing &amp; Plans</a></li>
+        <li><a href="#faq" class="mobile-nav-link">FAQ</a></li>
       </ul>
     </div>
   </nav>
@@ -196,7 +196,7 @@
   <!-- ==========================================================================
        AUTHENTICATED VIEW ONLY: Main Page Dashboard (Visible ONLY When Logged In)
        ========================================================================== -->
-  <div id="authDashboardView">
+  <div id="authDashboardView" style="display:none;">
     <section class="main-page-section" id="main-page">
       <div class="container">
         <!-- 1. Live Frozen Header Bar (Mobile App Style) -->
@@ -647,7 +647,7 @@
        GUEST / DEFAULT INDEX VIEW: Trade Niti Features Introduction
        Visible ONLY on the first/default index page (when user is NOT logged in)
        ========================================================================== -->
-  <div id="guestLandingView" style="display:none;">
+  <div id="guestLandingView">
     <header class="hero-section" id="introduction">
       <div class="hero-glow"></div>
       <div class="container hero-grid">
