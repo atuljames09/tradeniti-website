@@ -260,10 +260,10 @@
           <div class="gl-tabs-row">
             <div class="gl-tabs" role="tablist">
               <button class="gl-tab-btn active" data-filter="all">All Market Movers</button>
-              <button class="gl-tab-btn" data-filter="gainers">🔥 Top Gainers (8)</button>
-              <button class="gl-tab-btn" data-filter="losers">📉 Top Losers (8)</button>
+              <button class="gl-tab-btn" data-filter="gainers">🔥 Top Gainers (10)</button>
+              <button class="gl-tab-btn" data-filter="losers">📉 Top Losers (10)</button>
             </div>
-            <div class="gl-live-tag">
+            <div class="gl-live-tag" id="glLiveSyncTag">
               <span class="pulse-dot"></span> Real-time Tick Sync
             </div>
           </div>
@@ -274,7 +274,7 @@
               <div class="gl-column-header">
                 <div class="section-title-bar-accent" style="background:#10B981;"></div>
                 <h3 class="gl-column-title">🔥 Top Gainers</h3>
-                <span class="gl-badge-count profit" id="gainersCountBadge">8 Stocks</span>
+                <span class="gl-badge-count profit" id="gainersCountBadge">10 Stocks</span>
               </div>
               <div class="stock-list" id="topGainersList">
                 <!-- Rendered via JS -->
@@ -286,7 +286,7 @@
               <div class="gl-column-header">
                 <div class="section-title-bar-accent" style="background:#EF4444;"></div>
                 <h3 class="gl-column-title">📉 Top Losers</h3>
-                <span class="gl-badge-count loss" id="losersCountBadge">8 Stocks</span>
+                <span class="gl-badge-count loss" id="losersCountBadge">10 Stocks</span>
               </div>
               <div class="stock-list" id="topLosersList">
                 <!-- Rendered via JS -->

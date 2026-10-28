@@ -1642,23 +1642,36 @@ let MAIN_PAGE_INDICES = [
 ];
 
 let MARKET_STOCKS_MASTER = [
-  { symbol: 'LT', name: 'Larsen & Toubro Ltd.', sector: 'Infra', volume: '4.8M', price: 3831.80, change: 166.50, changePct: 4.55, high52: 3915.00, low52: 2872.00, cap: 'â‚¹5.2L Cr' },
+  // â”€â”€ Mobile App Top Gainers Tracked Universe â”€â”€
+  { symbol: 'UBL', name: 'United Breweries Ltd.', sector: 'Consumer', volume: '1.4M', price: 1236.40, change: 100.20, changePct: 8.82, high52: 1317.00, low52: 980.00, cap: 'â‚¹32,600 Cr' },
+  { symbol: 'NAVINFLUOR', name: 'Navin Fluorine Intl.', sector: 'Chemicals', volume: '620K', price: 8500.00, change: 838.00, changePct: 10.94, high52: 8600.00, low52: 5200.00, cap: 'â‚¹42,100 Cr' },
+  { symbol: 'LT', name: 'Larsen & Toubro Ltd.', sector: 'Infra', volume: '4.8M', price: 3822.00, change: 156.90, changePct: 4.28, high52: 3915.00, low52: 2872.00, cap: 'â‚¹5.2L Cr' },
+  { symbol: 'NATIONALUM', name: 'National Aluminium Co.', sector: 'Metals', volume: '18.2M', price: 318.95, change: 10.75, changePct: 3.49, high52: 335.00, low52: 130.00, cap: 'â‚¹58,400 Cr' },
+  { symbol: 'APOLLOHOSP', name: 'Apollo Hospitals Enterprise', sector: 'Healthcare', volume: '840K', price: 8020.00, change: 228.00, changePct: 2.93, high52: 8150.00, low52: 5600.00, cap: 'â‚¹1.1L Cr' },
+  { symbol: 'HYUNDAI', name: 'Hyundai Motor India', sector: 'Auto', volume: '3.2M', price: 1910.90, change: 49.50, changePct: 2.66, high52: 1980.00, low52: 1680.00, cap: 'â‚¹1.5L Cr' },
+  { symbol: 'VOLTAS', name: 'Voltas Limited', sector: 'Consumer', volume: '2.1M', price: 968.60, change: 21.05, changePct: 2.22, high52: 1080.00, low52: 740.00, cap: 'â‚¹32,000 Cr' },
+  { symbol: 'CUMMINSIND', name: 'Cummins India Limited', sector: 'Engg', volume: '580K', price: 4626.70, change: 94.70, changePct: 2.09, high52: 4800.00, low52: 2400.00, cap: 'â‚¹1.2L Cr' },
+  { symbol: 'RAYMOND', name: 'Raymond Limited', sector: 'Textiles', volume: '920K', price: 1099.80, change: 18.60, changePct: 1.72, high52: 1250.00, low52: 680.00, cap: 'â‚¹7,300 Cr' },
   { symbol: 'SBIN', name: 'State Bank of India', sector: 'Banking', volume: '22.4M', price: 953.15, change: 8.05, changePct: 0.85, high52: 954.35, low52: 543.00, cap: 'â‚¹8.5L Cr' },
   { symbol: 'MARUTI', name: 'Maruti Suzuki India', sector: 'Auto', volume: '780K', price: 11522.00, change: 72.00, changePct: 0.63, high52: 13680.00, low52: 9888.00, cap: 'â‚¹3.6L Cr' },
   { symbol: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', sector: 'Pharma', volume: '3.21M', price: 1747.00, change: 7.00, changePct: 0.40, high52: 1960.00, low52: 1345.00, cap: 'â‚¹4.2L Cr' },
   { symbol: 'RELIANCE', name: 'Reliance Industries', sector: 'Energy', volume: '11.2M', price: 1200.00, change: 3.80, changePct: 0.32, high52: 1608.00, low52: 1110.00, cap: 'â‚¹16.2L Cr' },
-  { symbol: 'NTPC', name: 'NTPC Limited', sector: 'Utilities', volume: '14.2M', price: 301.15, change: -0.65, changePct: -0.22, high52: 435.00, low52: 290.00, cap: 'â‚¹2.9L Cr' },
-  { symbol: 'KOTAKBANK', name: 'Kotak Mahindra Bank', sector: 'Banking', volume: '4.8M', price: 441.05, change: -1.45, changePct: -0.33, high52: 502.00, low52: 390.00, cap: 'â‚¹3.7L Cr' },
-  { symbol: 'HDFCBANK', name: 'HDFC Bank Ltd.', sector: 'Banking', volume: '18.5M', price: 677.10, change: -3.10, changePct: -0.46, high52: 942.00, low52: 669.00, cap: 'â‚¹10.3L Cr' },
-  { symbol: 'COALINDIA', name: 'Coal India Limited', sector: 'Mining', volume: '8.64M', price: 395.80, change: -2.20, changePct: -0.55, high52: 541.00, low52: 372.75, cap: 'â‚¹2.4L Cr' },
-  { symbol: 'AXISBANK', name: 'Axis Bank Limited', sector: 'Banking', volume: '9.2M', price: 1207.40, change: -12.60, changePct: -1.03, high52: 1339.00, low52: 980.00, cap: 'â‚¹3.7L Cr' },
-  { symbol: 'WIPRO', name: 'Wipro Limited', sector: 'IT', volume: '4.56M', price: 184.61, change: -2.39, changePct: -1.28, high52: 300.00, low52: 180.00, cap: 'â‚¹1.9L Cr' },
-  { symbol: 'BHARTIARTL', name: 'Bharti Airtel Ltd.', sector: 'Telecom', volume: '6.4M', price: 1951.90, change: -26.90, changePct: -1.36, high52: 2020.00, low52: 1100.00, cap: 'â‚¹11.1L Cr' },
-  { symbol: 'TITAN', name: 'Titan Company Limited', sector: 'Consumer', volume: '1.98M', price: 4304.70, change: -61.20, changePct: -1.40, high52: 4400.00, low52: 2834.00, cap: 'â‚¹3.8L Cr' },
-  { symbol: 'ICICIBANK', name: 'ICICI Bank Limited', sector: 'Banking', volume: '12.8M', price: 1367.30, change: -19.60, changePct: -1.41, high52: 1480.00, low52: 1187.00, cap: 'â‚¹9.6L Cr' },
+
+  // â”€â”€ Mobile App Top Losers Tracked Universe â”€â”€
+  { symbol: 'MPHASIS', name: 'Mphasis Limited', sector: 'IT', volume: '940K', price: 2478.60, change: -139.80, changePct: -5.34, high52: 3200.00, low52: 2100.00, cap: 'â‚¹46,800 Cr' },
+  { symbol: 'INFY', name: 'Infosys Limited', sector: 'IT', volume: '6.32M', price: 1108.10, change: -54.90, changePct: -4.72, high52: 1400.00, low52: 1050.00, cap: 'â‚¹4.6L Cr' },
+  { symbol: 'SAIL', name: 'Steel Authority of India', sector: 'Metals', volume: '32.5M', price: 164.87, change: -6.33, changePct: -3.70, high52: 178.00, low52: 95.00, cap: 'â‚¹68,100 Cr' },
+  { symbol: 'HINDPETRO', name: 'Hindustan Petroleum Corp', sector: 'Energy', volume: '8.4M', price: 340.90, change: -13.10, changePct: -3.70, high52: 440.00, low52: 240.00, cap: 'â‚¹72,400 Cr' },
+  { symbol: 'PETRONET', name: 'Petronet LNG Limited', sector: 'Energy', volume: '4.6M', price: 286.45, change: -9.55, changePct: -3.23, high52: 380.00, low52: 220.00, cap: 'â‚¹43,000 Cr' },
+  { symbol: 'COFORGE', name: 'Coforge Limited', sector: 'IT', volume: '480K', price: 1935.00, change: -62.00, changePct: -3.10, high52: 2250.00, low52: 1400.00, cap: 'â‚¹38,200 Cr' },
+  { symbol: 'JUBLFOOD', name: 'Jubilant FoodWorks', sector: 'Consumer', volume: '3.8M', price: 416.75, change: -12.75, changePct: -2.97, high52: 680.00, low52: 390.00, cap: 'â‚¹27,500 Cr' },
+  { symbol: 'TCS', name: 'Tata Consultancy Services', sector: 'IT', volume: '2.15M', price: 2423.00, change: -74.00, changePct: -2.96, high52: 3000.00, low52: 2400.00, cap: 'â‚¹8.8L Cr' },
+  { symbol: 'ONGC', name: 'Oil and Natural Gas Corp', sector: 'Energy', volume: '14.8M', price: 223.34, change: -6.50, changePct: -2.83, high52: 345.00, low52: 210.00, cap: 'â‚¹2.8L Cr' },
+  { symbol: 'TECHM', name: 'Tech Mahindra Limited', sector: 'IT', volume: '2.8M', price: 1749.40, change: -45.60, changePct: -2.54, high52: 1850.00, low52: 1200.00, cap: 'â‚¹1.7L Cr' },
   { symbol: 'ITC', name: 'ITC Limited', sector: 'FMCG', volume: '15.6M', price: 255.80, change: -4.20, changePct: -1.62, high52: 310.00, low52: 240.00, cap: 'â‚¹3.2L Cr' },
-  { symbol: 'TCS', name: 'Tata Consultancy Services', sector: 'IT', volume: '2.15M', price: 2428.40, change: -68.50, changePct: -2.74, high52: 3000.00, low52: 2400.00, cap: 'â‚¹8.8L Cr' },
-  { symbol: 'INFY', name: 'Infosys Limited', sector: 'IT', volume: '6.32M', price: 1111.05, change: -52.00, changePct: -4.47, high52: 1400.00, low52: 1100.00, cap: 'â‚¹4.6L Cr' }
+  { symbol: 'ICICIBANK', name: 'ICICI Bank Limited', sector: 'Banking', volume: '12.8M', price: 1367.30, change: -19.60, changePct: -1.41, high52: 1480.00, low52: 1187.00, cap: 'â‚¹9.6L Cr' },
+  { symbol: 'TITAN', name: 'Titan Company Limited', sector: 'Consumer', volume: '1.98M', price: 4304.70, change: -61.20, changePct: -1.40, high52: 4400.00, low52: 2834.00, cap: 'â‚¹3.8L Cr' },
+  { symbol: 'WIPRO', name: 'Wipro Limited', sector: 'IT', volume: '4.56M', price: 184.61, change: -2.39, changePct: -1.28, high52: 300.00, low52: 180.00, cap: 'â‚¹1.9L Cr' }
 ];
 
 let MAIN_PAGE_GAINERS = [];
@@ -1671,8 +1684,9 @@ function updateGainersAndLosersFromMaster() {
   const lList = MARKET_STOCKS_MASTER.filter(s => s.changePct < 0)
     .sort((a, b) => a.changePct - b.changePct);
 
-  MAIN_PAGE_GAINERS = gList.length > 0 ? gList.slice(0, 8) : MARKET_STOCKS_MASTER.slice(0, 8);
-  MAIN_PAGE_LOSERS = lList.length > 0 ? lList.slice(0, 8) : MARKET_STOCKS_MASTER.slice(-8);
+  // Take top 10 matching the Android Mobile App
+  MAIN_PAGE_GAINERS = gList.length > 0 ? gList.slice(0, 10) : MARKET_STOCKS_MASTER.slice(0, 10);
+  MAIN_PAGE_LOSERS = lList.length > 0 ? lList.slice(0, 10) : MARKET_STOCKS_MASTER.slice(-10);
 }
 updateGainersAndLosersFromMaster();
 
