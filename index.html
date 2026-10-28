@@ -2318,7 +2318,7 @@
               <span class="live-pulse-badge" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.62rem; font-weight: 700; padding: 1.5px 6px; border-radius: 8px;">LIVE SCAN</span>
             </div>
             <p class="modal-desc" id="screenerSubtitleCount" style="margin: 1px 0 0; font-size: 0.72rem; color: var(--text-muted);">
-              360+ NSE Stocks Listed &bull; Technical Confluence %
+              359 NSE Stocks Listed
             </p>
           </div>
         </div>
@@ -2375,25 +2375,25 @@
         <table class="screener-data-table" id="screenerDataTable">
           <thead>
             <tr>
-              <!-- Col 1: FROZEN (160px) -->
-              <th class="col-frozen" data-sort-key="NAME" title="Sort by Stock Symbol">
+                            <!-- Col 1: Stock Name ðŸ“Œ (FROZEN) -->
+              <th class="col-frozen" data-sort-key="NAME" title="Sort by Stock Name">
                 <div class="th-content">
-                  <span>Stock 📌</span>
+                  <span>Stock Name ðŸ“Œ</span>
                   <span class="sort-arrow" id="sortArrowNAME"></span>
                 </div>
               </th>
-              <!-- Col 2: Current LTP (95px) -->
-              <th class="col-price" data-sort-key="PRICE" title="Sort by Last Traded Price">
+              <!-- Col 2: Price (P/L%) - Matches Mobile App -->
+              <th class="col-price" data-sort-key="CHANGE" title="Sort by Price and Change %">
                 <div class="th-content align-end">
-                  <span>LTP (₹)</span>
-                  <span class="sort-arrow" id="sortArrowPRICE"></span>
+                  <span>Price (P/L%)</span>
+                  <span class="sort-arrow" id="sortArrowCHANGE"></span>
                 </div>
               </th>
-              <!-- Col 3: Change % (85px) -->
-              <th class="col-change" data-sort-key="CHANGE" title="Sort by 24h Change %">
+              <!-- Col 3: LTP -->
+              <th class="col-ltp" data-sort-key="PRICE" title="Sort by Last Traded Price">
                 <div class="th-content align-end">
-                  <span>Change %</span>
-                  <span class="sort-arrow" id="sortArrowCHANGE"></span>
+                  <span>LTP</span>
+                  <span class="sort-arrow" id="sortArrowPRICE"></span>
                 </div>
               </th>
               <!-- Col 4: 52W High (90px) -->
