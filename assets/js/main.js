@@ -515,7 +515,7 @@ function initEmaCollideRadar() {
 /* ==========================================================================
    5. Interactive Stock Screener (360+ Stocks)
    ========================================================================== */
-const SCREENER_STOCKS = [
+let SCREENER_STOCKS = [
   { symbol: 'TATAMOTORS', name: 'Tata Motors', price: 924.80, change: 2.50, high52: 1065.00, low52: 624.85, analysisPct: 82, sector: 'Auto' },
   { symbol: 'INFY', name: 'Infosys', price: 1842.60, change: 1.59, high52: 1976.00, low52: 1358.35, analysisPct: 78, sector: 'IT' },
   { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2948.50, change: 1.11, high52: 3217.00, low52: 2220.30, analysisPct: 74, sector: 'Energy' },
@@ -1630,7 +1630,7 @@ function initAuth() {
    10. Main Page: Mobile App Live Market Dashboard Logic
        (All Indexes, Top Gainers, Top Losers, Live Clock & Search)
    ========================================================================== */
-const MAIN_PAGE_INDICES = [
+let MAIN_PAGE_INDICES = [
   { name: 'NIFTY 50', value: 24589.75, change: 143.25, changePct: 0.59, constituents: 50 },
   { name: 'SENSEX', value: 80812.15, change: 428.10, changePct: 0.53, constituents: 30 },
   { name: 'BANK NIFTY', value: 53240.50, change: -112.80, changePct: -0.21, constituents: 12 },
@@ -1641,7 +1641,7 @@ const MAIN_PAGE_INDICES = [
   { name: 'NIFTY COMMODITIES', value: 8624.30, change: 54.20, changePct: 0.63, constituents: 30 }
 ];
 
-const MAIN_PAGE_GAINERS = [
+let MAIN_PAGE_GAINERS = [
   { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd.', price: 924.80, change: 22.60, changePct: 2.50, high52: 1065.00, low52: 624.85, volume: '15.48M', cap: '₹3.0L Cr', sector: 'Auto' },
   { symbol: 'POWERGRID', name: 'Power Grid Corp of India', price: 342.80, change: 5.60, changePct: 1.66, high52: 366.25, low52: 249.65, volume: '11.23M', cap: '₹3.2L Cr', sector: 'Utilities' },
   { symbol: 'INFY', name: 'Infosys Limited', price: 1842.60, change: 28.90, changePct: 1.59, high52: 1976.00, low52: 1358.35, volume: '6.32M', cap: '₹7.7L Cr', sector: 'IT' },
@@ -1652,7 +1652,7 @@ const MAIN_PAGE_GAINERS = [
   { symbol: 'TITAN', name: 'Titan Company Limited', price: 3612.80, change: 42.50, changePct: 1.19, high52: 3886.00, low52: 2834.45, volume: '1.98M', cap: '₹3.2L Cr', sector: 'Consumer' }
 ];
 
-const MAIN_PAGE_LOSERS = [
+let MAIN_PAGE_LOSERS = [
   { symbol: 'COALINDIA', name: 'Coal India Limited', price: 468.35, change: -4.20, changePct: -0.89, high52: 541.00, low52: 372.75, volume: '8.64M', cap: '₹2.9L Cr', sector: 'Mining' },
   { symbol: 'IDFCFIRSTB', name: 'IDFC First Bank Ltd.', price: 65.00, change: -0.50, changePct: -0.76, high52: 91.60, low52: 51.50, volume: '38.0M', cap: '₹0.5L Cr', sector: 'Banking' },
   { symbol: 'SUNPHARMA', name: 'Sun Pharmaceutical Ind.', price: 1764.25, change: -12.40, changePct: -0.70, high52: 1960.00, low52: 1345.00, volume: '3.21M', cap: '₹4.2L Cr', sector: 'Pharma' },
@@ -1749,6 +1749,93 @@ function initMainPageDashboard() {
     }).join('');
   }
   renderIndices();
+
+  // â”€â”€ LIVE NSE DATA FEED INTEGRATION (via Vercel Mumbai bom1 proxy) â”€â”€
+  async function fetchLiveIndices() {
+    try {
+      const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/indices');
+      if (!res.ok) return;
+      const json = await res.json();
+      if (json && Array.isArray(json.data) && json.data.length > 0) {
+        json.data.forEach(item => {
+          const rawName = (item.index || item.indexSymbol || '').trim();
+          let target = MAIN_PAGE_INDICES.find(idx => idx.name === rawName);
+          if (!target) {
+            if (rawName === 'S&P BSE SENSEX' || rawName === 'BSE SENSEX') target = MAIN_PAGE_INDICES.find(i => i.name === 'SENSEX');
+            else if (rawName === 'NIFTY BANK') target = MAIN_PAGE_INDICES.find(i => i.name === 'BANK NIFTY');
+            else if (rawName === 'NIFTY MIDCAP SELECT' || rawName === 'NIFTY MIDCAP 100') target = MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY MIDCAP');
+            else if (rawName === 'NIFTY 100') target = MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY 100');
+            else if (rawName === 'NIFTY 200') target = MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY 200');
+            else if (rawName === 'NIFTY IT') target = MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY IT');
+          }
+          if (target && item.last) {
+            target.value = item.last;
+            target.change = item.variation !== undefined ? item.variation : (item.change || 0);
+            target.changePct = item.percentChange !== undefined ? item.percentChange : (item.pctChange || 0);
+          }
+        });
+        renderIndices();
+        if (updateTimerEl) updateTimerEl.textContent = 'Updated Just now (Live NSE)';
+        secondsAgo = 0;
+      }
+    } catch (e) {
+      console.warn('Live indices fetch note:', e);
+    }
+  }
+
+  async function fetchLiveQuotesForMainPage() {
+    const symbols = ['LT', 'MARUTI', 'SBIN', 'RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'ICICIBANK', 'TITAN', 'COALINDIA', 'WIPRO', 'ITC', 'BHARTIARTL', 'AXISBANK', 'SUNPHARMA'];
+    for (const sym of symbols) {
+      try {
+        const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/quote?symbol=' + encodeURIComponent(sym));
+        if (!res.ok) continue;
+        const data = await res.json();
+        if (data && data.priceInfo && data.priceInfo.lastPrice) {
+          const ltp = data.priceInfo.lastPrice;
+          const chg = data.priceInfo.change || 0;
+          const pchg = data.priceInfo.pChange !== undefined ? data.priceInfo.pChange : 0;
+
+          const g = MAIN_PAGE_GAINERS.find(s => s.symbol === sym);
+          if (g) { g.price = ltp; g.change = chg; g.changePct = pchg; }
+
+          const l = MAIN_PAGE_LOSERS.find(s => s.symbol === sym);
+          if (l) { l.price = ltp; l.change = chg; l.changePct = pchg; }
+
+          if (typeof SCREENER_STOCKS !== 'undefined') {
+            const sc = SCREENER_STOCKS.find(s => s.symbol === sym);
+            if (sc) { sc.price = ltp; sc.change = pchg; }
+          }
+        }
+      } catch (_) {}
+    }
+    renderLists();
+    if (typeof renderScreenerTable === 'function') renderScreenerTable();
+  }
+
+  // Initial live market pull
+  fetchLiveIndices();
+  fetchLiveQuotesForMainPage();
+
+  // Auto-refresh intervals: Indices every 20s, Quotes every 45s
+  setInterval(fetchLiveIndices, 20000);
+  setInterval(fetchLiveQuotesForMainPage, 45000);
+
+  // Manual Live Refresh Button Handler
+  const btnManualRefresh = document.getElementById('btnManualLiveRefresh');
+  const liveRefreshIcon = document.getElementById('liveRefreshIcon');
+  if (btnManualRefresh) {
+    btnManualRefresh.addEventListener('click', async () => {
+      if (liveRefreshIcon) liveRefreshIcon.style.animation = 'spin 0.8s linear infinite';
+      btnManualRefresh.disabled = true;
+      await fetchLiveIndices();
+      await fetchLiveQuotesForMainPage();
+      if (liveRefreshIcon) liveRefreshIcon.style.animation = '';
+      btnManualRefresh.disabled = false;
+      if (typeof showToast === 'function') {
+        showToast('Live market quotes & indices updated from NSE India!', 'ðŸ“ˆ');
+      }
+    });
+  }
 
   // Carousel Buttons
   if (prevBtn && carouselWrapper) {
@@ -4392,20 +4479,59 @@ function initSidebarDrawer() {
     });
   });
 
-  // Refresh Action (Matching Kotlin fetch() action)
+  async function fetchLiveFiiDii() {
+    try {
+      if (fiidiiRefreshIcon) fiidiiRefreshIcon.style.animation = 'spin 0.8s linear infinite';
+      const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/fiidii');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const diiItem = data.find(d => d.category === 'DII');
+          const fiiItem = data.find(d => d.category === 'FII/FPI' || d.category === 'FII');
+          if (diiItem || fiiItem) {
+            const diiNet = diiItem ? parseFloat(diiItem.netValue) : 0;
+            const fiiNet = fiiItem ? parseFloat(fiiItem.netValue) : 0;
+            const combined = fiiNet + diiNet;
+            const dateStr = (fiiItem ? fiiItem.date : (diiItem ? diiItem.date : 'Today'));
+
+            const existing = SEED_FIIDII_ENTRIES.find(e => e.date === dateStr);
+            if (existing) {
+              existing.fiiNet = fiiNet;
+              existing.diiNet = diiNet;
+              existing.fiiDiiNet = parseFloat(combined.toFixed(2));
+            } else {
+              SEED_FIIDII_ENTRIES.unshift({
+                date: dateStr,
+                niftyClose: (MAIN_PAGE_INDICES[0]?.value?.toFixed(2)) || "22547.70",
+                niftyChangePct: MAIN_PAGE_INDICES[0]?.changePct || -0.89,
+                fiiDiiNet: parseFloat(combined.toFixed(2)),
+                fiiNet: fiiNet,
+                diiNet: diiNet
+              });
+            }
+            if (typeof showToast === 'function') {
+              showToast('Live FII/DII sessions updated from NSE India!', 'ðŸ“Š');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('FII DII live fetch error:', e);
+    } finally {
+      if (fiidiiRefreshIcon) fiidiiRefreshIcon.style.animation = '';
+      renderFiiDiiTable();
+    }
+  }
+
+  // Refresh Action
   if (btnRefreshFiiDii) {
     btnRefreshFiiDii.addEventListener('click', () => {
-      if (fiidiiRefreshIcon) fiidiiRefreshIcon.style.animation = 'spin 0.8s linear infinite';
-
-      setTimeout(() => {
-        if (fiidiiRefreshIcon) fiidiiRefreshIcon.style.animation = '';
-        renderFiiDiiTable();
-        showToast('FII/DII Cash Market sessions updated! Source: NSE India', '📊');
-      }, 650);
+      fetchLiveFiiDii();
     });
   }
 
   function openFiiDiiModal() {
+    fetchLiveFiiDii();
     renderFiiDiiTable();
     if (fiidiiModal) fiidiiModal.classList.add('active');
   }
