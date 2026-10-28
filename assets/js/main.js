@@ -517,7 +517,7 @@ function initEmaCollideRadar() {
    ========================================================================== */
 let SCREENER_STOCKS = [
   { symbol: 'TANLA', name: 'Tanla Platforms Ltd', price: 590.85, change: 2.02, high52: 674.5, low52: 480, analysisPct: 78, sector: 'IT' },
-  { symbol: 'DIVISLAB', name: 'Divi\'s Laboratories Ltd', price: 9673.5, change: 1.77, high52: 9673.5, low52: 5200, analysisPct: 74, sector: 'Pharma' },
+  { symbol: 'DIVISLAB', name: "Divi's Laboratories Ltd", price: 9673.5, change: 1.77, high52: 9673.5, low52: 5200, analysisPct: 74, sector: 'Pharma' },
   { symbol: 'LAURUSLABS', name: 'Laurus Labs Ltd', price: 2183.1, change: 1.92, high52: 2183.1, low52: 1200, analysisPct: 72, sector: 'Pharma' },
   { symbol: 'PERSISTENT', name: 'Persistent Systems Ltd', price: 5778.5, change: -0.93, high52: 6563.5, low52: 3800, analysisPct: 71, sector: 'IT' },
   { symbol: 'FSL', name: 'Firstsource Solutions Ltd', price: 305.45, change: 2.24, high52: 367.2, low52: 180, analysisPct: 70, sector: 'IT' },
@@ -1384,19 +1384,27 @@ function initAuth() {
   window.switchAuthTab = function(tab) {
     currentAuthTab = tab;
     window.currentAuthTab = tab;
+    const authDashboard = document.getElementById('authDashboardView');
+    const guestLanding = document.getElementById('guestLandingView');
     const mainSec = document.getElementById('main-page');
     const wlSec = document.getElementById('watchlist-page');
     const smcSec = document.getElementById('smc-page');
     const newsSec = document.getElementById('news-page');
+    const pricingSec = document.getElementById('pricing');
     const navLinksList = document.getElementById('navLinksList');
     const mobileNavDrawer = document.getElementById('mobileMenuDrawer');
 
     if (tab === 'main') {
+      if (authDashboard) authDashboard.style.display = 'block';
+      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'block';
       if (wlSec) wlSec.style.display = 'none';
       if (smcSec) smcSec.style.display = 'none';
       if (newsSec) newsSec.style.display = 'none';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'watchlist') {
+      if (authDashboard) authDashboard.style.display = 'block';
+      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'block';
       if (smcSec) smcSec.style.display = 'none';
@@ -1404,7 +1412,10 @@ function initAuth() {
       if (window.renderActiveWatchlist) {
         window.renderActiveWatchlist();
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'smc') {
+      if (authDashboard) authDashboard.style.display = 'block';
+      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'none';
       if (smcSec) smcSec.style.display = 'block';
@@ -1412,13 +1423,22 @@ function initAuth() {
       if (window.renderSmcModule) {
         window.renderSmcModule();
       }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (tab === 'news') {
+      if (authDashboard) authDashboard.style.display = 'block';
+      if (guestLanding) guestLanding.style.display = 'none';
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'none';
       if (smcSec) smcSec.style.display = 'none';
       if (newsSec) newsSec.style.display = 'block';
       if (window.renderNewsModule) {
         window.renderNewsModule();
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (tab === 'pricing') {
+      if (guestLanding) guestLanding.style.display = 'block';
+      if (pricingSec) {
+        pricingSec.scrollIntoView({ behavior: 'smooth' });
       }
     }
 
@@ -1442,8 +1462,6 @@ function initAuth() {
         }
       });
     }
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // RENDER NAVBAR AUTH STATE & TOGGLE MAIN PAGE / WATCHLIST / SMC / NEWS VS INTRODUCTION VIEWS
@@ -1461,83 +1479,84 @@ function initAuth() {
 
     if (!authWrapper) return;
 
-    if (user) {
-      // 1. LOGGED-IN STATE: Show auth dashboard view, hide features introduction
-      if (authDashboard) authDashboard.style.display = 'block';
-      if (guestLanding) guestLanding.style.display = 'none';
+    // Both Authenticated and Guest sessions default to the full Trade Niti terminal dashboard
+    if (authDashboard) authDashboard.style.display = 'block';
+    if (guestLanding) guestLanding.style.display = 'none';
 
-      // Toggle views between Main Page, Watchlist, Stock Monitoring Center (SMC), and News
-      const mainSec = document.getElementById('main-page');
-      const wlSec = document.getElementById('watchlist-page');
-      const smcSec = document.getElementById('smc-page');
-      const newsSec = document.getElementById('news-page');
-      if (currentAuthTab === 'main') {
-        if (mainSec) mainSec.style.display = 'block';
-        if (wlSec) wlSec.style.display = 'none';
-        if (smcSec) smcSec.style.display = 'none';
-        if (newsSec) newsSec.style.display = 'none';
-      } else if (currentAuthTab === 'watchlist') {
-        if (mainSec) mainSec.style.display = 'none';
-        if (wlSec) wlSec.style.display = 'block';
-        if (smcSec) smcSec.style.display = 'none';
-        if (newsSec) newsSec.style.display = 'none';
-        if (window.renderActiveWatchlist) window.renderActiveWatchlist();
-      } else if (currentAuthTab === 'smc') {
-        if (mainSec) mainSec.style.display = 'none';
-        if (wlSec) wlSec.style.display = 'none';
-        if (smcSec) smcSec.style.display = 'block';
-        if (newsSec) newsSec.style.display = 'none';
-        if (window.renderSmcModule) window.renderSmcModule();
-      } else if (currentAuthTab === 'news') {
-        if (mainSec) mainSec.style.display = 'none';
-        if (wlSec) wlSec.style.display = 'none';
-        if (smcSec) smcSec.style.display = 'none';
-        if (newsSec) newsSec.style.display = 'block';
-        if (window.renderNewsModule) window.renderNewsModule();
-      }
+    // Toggle views between Main Page, Watchlist, Stock Monitoring Center (SMC), and News
+    const mainSec = document.getElementById('main-page');
+    const wlSec = document.getElementById('watchlist-page');
+    const smcSec = document.getElementById('smc-page');
+    const newsSec = document.getElementById('news-page');
+    if (currentAuthTab === 'main') {
+      if (mainSec) mainSec.style.display = 'block';
+      if (wlSec) wlSec.style.display = 'none';
+      if (smcSec) smcSec.style.display = 'none';
+      if (newsSec) newsSec.style.display = 'none';
+    } else if (currentAuthTab === 'watchlist') {
+      if (mainSec) mainSec.style.display = 'none';
+      if (wlSec) wlSec.style.display = 'block';
+      if (smcSec) smcSec.style.display = 'none';
+      if (newsSec) newsSec.style.display = 'none';
+      if (window.renderActiveWatchlist) window.renderActiveWatchlist();
+    } else if (currentAuthTab === 'smc') {
+      if (mainSec) mainSec.style.display = 'none';
+      if (wlSec) wlSec.style.display = 'none';
+      if (smcSec) smcSec.style.display = 'block';
+      if (newsSec) newsSec.style.display = 'none';
+      if (window.renderSmcModule) window.renderSmcModule();
+    } else if (currentAuthTab === 'news') {
+      if (mainSec) mainSec.style.display = 'none';
+      if (wlSec) wlSec.style.display = 'none';
+      if (smcSec) smcSec.style.display = 'none';
+      if (newsSec) newsSec.style.display = 'block';
+      if (window.renderNewsModule) window.renderNewsModule();
+    }
 
-      // Update navbar menus: Menu 1: "Main Page", Menu 2: "Watchlist", Menu 3: "Stock Monitoring Center (SMC)", Menu 4: "News"
-      // Update navbar menus: Menu 1: "Main Page", Menu 2: "Watchlist", Menu 3: "Stock Monitoring Center (SMC)", Menu 4: "News"
-      if (navLinksList) {
-        navLinksList.innerHTML = `
-          <li><a href="#main-page" class="nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
-          <li><a href="#watchlist-page" class="nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
-          <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
-          <li><a href="#news-page" class="nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
+    // Update navbar menus: 4 Core Menus + Pricing & Plans
+    if (navLinksList) {
+      navLinksList.innerHTML = `
+        <li><a href="#main-page" class="nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
+        <li><a href="#watchlist-page" class="nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
+        <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
+        <li><a href="#news-page" class="nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
+        <li><a href="#pricing" class="nav-link ${currentAuthTab === 'pricing' ? 'active' : ''}" data-view="pricing" id="navPricingLink">Pricing &amp; Plans</a></li>
+      `;
+      navLinksList.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const view = link.getAttribute('data-view');
+          window.switchAuthTab(view);
+        });
+      });
+    }
+
+    if (mobileNavDrawer) {
+      const mobileNavUl = mobileNavDrawer.querySelector('.mobile-nav-links');
+      if (mobileNavUl) {
+        mobileNavUl.innerHTML = `
+          <li><a href="#main-page" class="mobile-nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
+          <li><a href="#watchlist-page" class="mobile-nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
+          <li><a href="#smc-page" class="mobile-nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
+          <li><a href="#news-page" class="mobile-nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
+          <li><a href="#pricing" class="mobile-nav-link ${currentAuthTab === 'pricing' ? 'active' : ''}" data-view="pricing" id="mobilePricingLink">Pricing &amp; Plans</a></li>
         `;
-        navLinksList.querySelectorAll('.nav-link').forEach(link => {
+        mobileNavUl.querySelectorAll('.mobile-nav-link').forEach(link => {
           link.addEventListener('click', (e) => {
             e.preventDefault();
             const view = link.getAttribute('data-view');
             window.switchAuthTab(view);
+            mobileNavDrawer.classList.remove('active');
           });
         });
       }
+    }
 
-      if (mobileNavDrawer) {
-        const mobileNavUl = mobileNavDrawer.querySelector('.mobile-nav-links');
-        if (mobileNavUl) {
-          mobileNavUl.innerHTML = `
-            <li><a href="#main-page" class="mobile-nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
-            <li><a href="#watchlist-page" class="mobile-nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
-            <li><a href="#smc-page" class="mobile-nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
-            <li><a href="#news-page" class="mobile-nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
-          `;
-          mobileNavUl.querySelectorAll('.mobile-nav-link').forEach(link => {
-            link.addEventListener('click', (e) => {
-              e.preventDefault();
-              const view = link.getAttribute('data-view');
-              window.switchAuthTab(view);
-              mobileNavDrawer.classList.remove('active');
-            });
-          });
-        }
-      }
-
+    if (user) {
+      // 1. LOGGED-IN STATE: Show User Pill & Logout
       const initial = user.initial || (user.fullName ? user.fullName.charAt(0).toUpperCase() : 'T');
       const displayName = user.fullName || user.username || 'Trader';
       const bgColor = user.color || '#2563EB';
-      const isGoogle = user.provider === 'google';
 
       const plan = user.plan || 'free_trial';
       const planBadge = plan === 'pro_annual' 
@@ -1571,39 +1590,7 @@ function initAuth() {
         });
       }
     } else {
-      // 2. LOGGED-OUT STATE (Default Index Page): Show features introduction only, hide Main Page, Watchlist, SMC & News
-      if (authDashboard) authDashboard.style.display = 'none';
-      if (guestLanding) guestLanding.style.display = 'block';
-      const wlSec = document.getElementById('watchlist-page');
-      if (wlSec) wlSec.style.display = 'none';
-      const smcSec = document.getElementById('smc-page');
-      if (smcSec) smcSec.style.display = 'none';
-      const newsSec = document.getElementById('news-page');
-      if (newsSec) newsSec.style.display = 'none';
-
-      // Update navbar menus for guest (introduction navigation)
-      if (navLinksList) {
-        navLinksList.innerHTML = `
-          <li><a href="#introduction" class="nav-link active">Introduction</a></li>
-          <li><a href="#features" class="nav-link">Features</a></li>
-          <li><a href="#screener" class="nav-link">Screener</a></li>
-          <li><a href="#pricing" class="nav-link">Pricing &amp; Plans</a></li>
-          <li><a href="#faq" class="nav-link">FAQ</a></li>
-        `;
-      }
-      if (mobileNavDrawer) {
-        const mobileNavUl = mobileNavDrawer.querySelector('.mobile-nav-links');
-        if (mobileNavUl) {
-          mobileNavUl.innerHTML = `
-            <li><a href="#introduction" class="mobile-nav-link active">Introduction</a></li>
-            <li><a href="#features" class="mobile-nav-link">Features</a></li>
-            <li><a href="#screener" class="mobile-nav-link">Screener</a></li>
-            <li><a href="#pricing" class="mobile-nav-link">Pricing &amp; Plans</a></li>
-            <li><a href="#faq" class="mobile-nav-link">FAQ</a></li>
-          `;
-        }
-      }
-
+      // 2. GUEST STATE: Show Sign In & Register buttons
       authWrapper.innerHTML = `
         <div class="auth-btn-group" style="display:flex; align-items:center; gap:8px;">
           <button id="authBtn" class="btn-primary" style="padding:9px 18px; font-size:0.88rem;">
@@ -1626,7 +1613,6 @@ function initAuth() {
       }
     }
   }
-
   // Pre-seed default users if empty
   getRegisteredUsers();
 
@@ -2126,10 +2112,12 @@ function initScrollSpy() {
     const mobileLinks = document.querySelectorAll('.mobile-nav-link');
     const scrollPos = window.scrollY + 140;
     const authDashboard = document.getElementById('authDashboardView');
-    let currentId = 'introduction';
+    const isAuth = authDashboard && authDashboard.style.display !== 'none';
+    let currentId = 'main-page';
     if (isAuth) {
       if (window.currentAuthTab === 'smc') currentId = 'smc-page';
       else if (window.currentAuthTab === 'watchlist') currentId = 'watchlist-page';
+      else if (window.currentAuthTab === 'news') currentId = 'news-page';
       else currentId = 'main-page';
     }
 
@@ -2214,7 +2202,7 @@ const WATCHLIST_COLORS = [
 
 const TRADE_NITI_MASTER_STOCKS = [
   { symbol: 'TANLA', name: 'Tanla Platforms Ltd', price: 590.85, change: 11.65, changePct: 2.02, ltp: 590.85, high52: 674.5, low52: 480, sector: 'IT', confluence: 78, analysisPct: 78, smcDefault: false },
-  { symbol: 'DIVISLAB', name: 'Divi\'s Laboratories Ltd', price: 9673.5, change: 168, changePct: 1.77, ltp: 9673.5, high52: 9673.5, low52: 5200, sector: 'Pharma', confluence: 74, analysisPct: 74, smcDefault: false },
+  { symbol: 'DIVISLAB', name: "Divi's Laboratories Ltd", price: 9673.5, change: 168, changePct: 1.77, ltp: 9673.5, high52: 9673.5, low52: 5200, sector: 'Pharma', confluence: 74, analysisPct: 74, smcDefault: false },
   { symbol: 'LAURUSLABS', name: 'Laurus Labs Ltd', price: 2183.1, change: 41.1, changePct: 1.92, ltp: 2183.1, high52: 2183.1, low52: 1200, sector: 'Pharma', confluence: 72, analysisPct: 72, smcDefault: false },
   { symbol: 'PERSISTENT', name: 'Persistent Systems Ltd', price: 5778.5, change: -54.2, changePct: -0.93, ltp: 5778.5, high52: 6563.5, low52: 3800, sector: 'IT', confluence: 71, analysisPct: 71, smcDefault: false },
   { symbol: 'FSL', name: 'Firstsource Solutions Ltd', price: 305.45, change: 6.7, changePct: 2.24, ltp: 305.45, high52: 367.2, low52: 180, sector: 'IT', confluence: 70, analysisPct: 70, smcDefault: false },
@@ -2256,7 +2244,7 @@ const TRADE_NITI_MASTER_STOCKS = [
   { symbol: 'BAJAJFINSV', name: 'Bajaj Finserv Ltd', price: 1489.9, change: 42.31, changePct: 2.84, ltp: 1489.9, high52: 1847.48, low52: 1177.02, sector: 'Financial Services', confluence: 61, analysisPct: 61, smcDefault: false },
   { symbol: 'GRASIM', name: 'Grasim Industries Ltd', price: 1040.15, change: -19.66, changePct: -1.89, ltp: 1040.15, high52: 1258.58, low52: 686.5, sector: 'Cement', confluence: 61, analysisPct: 61, smcDefault: false },
   { symbol: 'CIPLA', name: 'Cipla Ltd', price: 1979.75, change: 0.2, changePct: 0.01, ltp: 1979.75, high52: 2890.44, low52: 1504.61, sector: 'Pharma', confluence: 61, analysisPct: 61, smcDefault: false },
-  { symbol: 'DRREDDY', name: 'Dr. Reddy\', price: 6892.4, change: -38.6, changePct: -0.56, ltp: 6892.4, high52: 7200, low52: 5300, sector: 'Pharma', confluence: 61, analysisPct: 61, smcDefault: false },
+  { symbol: 'DRREDDY', name: "Dr. Reddy's Laboratories Ltd", price: 6892.4, change: -38.6, changePct: -0.56, ltp: 6892.4, high52: 7200, low52: 5300, sector: 'Pharma', confluence: 61, analysisPct: 61, smcDefault: false },
   { symbol: 'BPCL', name: 'Bharat Petroleum Corporation Ltd', price: 1306.55, change: 11.63, changePct: 0.89, ltp: 1306.55, high52: 1750.78, low52: 1097.5, sector: 'Energy', confluence: 61, analysisPct: 61, smcDefault: false },
   { symbol: 'INDUSINDBK', name: 'IndusInd Bank Ltd', price: 1350, change: -8.2, changePct: -0.6, ltp: 1350, high52: 1690, low52: 1220, sector: 'Banking', confluence: 61, analysisPct: 61, smcDefault: false },
   { symbol: 'BRITANNIA', name: 'Britannia Industries Ltd', price: 3410.9, change: -32.74, changePct: -0.96, ltp: 3410.9, high52: 5082.24, low52: 2694.61, sector: 'FMCG', confluence: 60, analysisPct: 60, smcDefault: false },
@@ -2413,9 +2401,9 @@ const TRADE_NITI_MASTER_STOCKS = [
   { symbol: 'BATAINDIA', name: 'Bata India Ltd', price: 839.05, change: 33.31, changePct: 3.97, ltp: 839.05, high52: 1233.4, low52: 604.12, sector: 'Footwear', confluence: 41, analysisPct: 41, smcDefault: false },
   { symbol: 'CAMPUS', name: 'Campus Activewear Ltd', price: 3442.35, change: -21.69, changePct: -0.63, ltp: 3442.35, high52: 4027.55, low52: 2478.49, sector: 'Footwear', confluence: 41, analysisPct: 41, smcDefault: false },
   { symbol: 'RELAXO', name: 'Relaxo Footwears Ltd', price: 2704.15, change: -8.38, changePct: -0.31, ltp: 2704.15, high52: 3488.35, low52: 2271.49, sector: 'Footwear', confluence: 40, analysisPct: 40, smcDefault: false },
-  { symbol: 'JUBLFOOD', name: 'Jubilant FoodWorks Ltd (Domino\', price: 564.15, change: 6.6, changePct: 1.17, ltp: 564.15, high52: 801.09, low52: 406.19, sector: 'QSR', confluence: 40, analysisPct: 40, smcDefault: false },
+  { symbol: 'JUBLFOOD', name: "Jubilant FoodWorks Ltd (Domino's)", price: 564.15, change: 6.6, changePct: 1.17, ltp: 564.15, high52: 801.09, low52: 406.19, sector: 'QSR', confluence: 40, analysisPct: 40, smcDefault: false },
   { symbol: 'DEVYANI', name: 'Devyani International Ltd (KFC/Pizza Hut)', price: 971.3, change: -25.45, changePct: -2.62, ltp: 971.3, high52: 1291.83, low52: 709.05, sector: 'QSR', confluence: 40, analysisPct: 40, smcDefault: false },
-  { symbol: 'WESTLIFE', name: 'Westlife Foodworld Ltd (McDonald\', price: 1500.15, change: 45.15, changePct: 3.01, ltp: 1500.15, high52: 2115.21, low52: 1140.11, sector: 'QSR', confluence: 40, analysisPct: 40, smcDefault: false },
+  { symbol: 'WESTLIFE', name: "Westlife Foodworld Ltd (McDonald's)", price: 1500.15, change: 45.15, changePct: 3.01, ltp: 1500.15, high52: 2115.21, low52: 1140.11, sector: 'QSR', confluence: 40, analysisPct: 40, smcDefault: false },
   { symbol: 'SAREGAMA', name: 'Saregama India Ltd', price: 3817.25, change: 128.64, changePct: 3.37, ltp: 3817.25, high52: 4847.91, low52: 2748.42, sector: 'Entertainment', confluence: 40, analysisPct: 40, smcDefault: false },
   { symbol: 'ZEEL', name: 'Zee Entertainment Enterprises Ltd', price: 1756.9, change: -41.46, changePct: -2.36, ltp: 1756.9, high52: 2266.4, low52: 1387.95, sector: 'Entertainment', confluence: 40, analysisPct: 40, smcDefault: false },
   { symbol: 'DIXON', name: 'Dixon Technologies (India) Ltd', price: 1331.1, change: 15.44, changePct: 1.16, ltp: 1331.1, high52: 1743.74, low52: 945.08, sector: 'Electronics', confluence: 40, analysisPct: 40, smcDefault: false },
