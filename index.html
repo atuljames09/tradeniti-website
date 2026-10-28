@@ -234,10 +234,14 @@
         <!-- 2. All 8 Market Indices Carousel -->
         <div class="indices-section">
           <div class="section-title-bar">
-            <div class="section-title-wrap">
+            <div class="section-title-wrap" style="display:flex; align-items:center; flex-wrap:wrap; gap:8px;">
               <div class="section-title-bar-accent"></div>
-              <h2 class="section-title-text">NSE / BSE Market Indices</h2>
+              <h2 class="section-title-text" style="margin:0;">NSE / BSE Market Indices</h2>
               <span class="section-title-sub">All 8 Real-time Benchmarks</span>
+              <a href="javascript:void(0)" class="link-stock-analysis index-header-sac-link" data-action="stock-analysis" data-symbol="NIFTY 50" title="Open Stock Analysis Center for NIFTY 50 Benchmark">
+                <span>NIFTY 50 Analysis Center</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </a>
             </div>
             <div class="carousel-nav-btns">
               <button class="carousel-btn" id="idxPrevBtn" title="Scroll Left" aria-label="Previous Indices">&lsaquo;</button>
@@ -3040,6 +3044,10 @@
         </div>
 
         <div class="sac-topbar-right">
+          <a href="https://www.tradingview.com/chart/?symbol=NSE:NIFTY" target="_blank" rel="noopener noreferrer" class="sac-tv-chart-btn" id="sacBtnTvChart" title="Open interactive TradingView Chart">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            <span>TradingView Chart</span>
+          </a>
           <button type="button" class="modal-close-btn sac-close-cross" id="closeAnalysisCenterCross" aria-label="Close">&times;</button>
         </div>
       </div>

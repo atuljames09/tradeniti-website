@@ -1847,15 +1847,25 @@ function initMainPageDashboard() {
   // Reset seconds ago every 30s
   setInterval(() => { secondsAgo = 0; }, 30000);
 
-  // 2. Render All 8 Indices
+  // 2. Render All 8 Indices (With NIFTY 50 Stock Analysis Center Link)
   function renderIndices() {
     carouselTrack.innerHTML = MAIN_PAGE_INDICES.map(idx => {
       const isUp = idx.change >= 0;
       const badgeCls = isUp ? 'profit' : 'loss';
       const sign = isUp ? '+' : '';
+      const isNifty50 = (idx.name === 'NIFTY 50' || idx.name === 'NIFTY');
+
       return `
-        <div class="index-card" title="${idx.name} - ${idx.constituents} Constituents">
-          <div class="index-card-name">${idx.name}</div>
+        <div class="index-card ${isNifty50 ? 'index-card-nifty' : ''}" data-index-symbol="${idx.name}" title="${idx.name} - ${idx.constituents} Constituents">
+          <div class="index-card-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:4px; margin-bottom:2px;">
+            <div class="index-card-name" style="margin:0;">${idx.name}</div>
+            ${isNifty50 ? `
+              <a href="javascript:void(0)" class="link-stock-analysis index-sac-pill" data-action="stock-analysis" data-symbol="NIFTY 50" title="Open Stock Analysis Center for NIFTY 50">
+                <span>Analysis Center</span>
+                <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              </a>
+            ` : ''}
+          </div>
           <div class="index-card-val">&#8377;${idx.value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
           <div class="index-card-badge ${badgeCls}">
             ${sign}${idx.change.toFixed(2)} (${sign}${idx.changePct.toFixed(2)}%)
@@ -1863,6 +1873,16 @@ function initMainPageDashboard() {
         </div>
       `;
     }).join('');
+
+    // Clicking anywhere on NIFTY 50 card opens Stock Analysis Center
+    carouselTrack.querySelectorAll('.index-card-nifty').forEach(card => {
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('a') || e.target.closest('button')) return;
+        if (typeof window.openStockAnalysisCenter === 'function') {
+          window.openStockAnalysisCenter('NIFTY 50');
+        }
+      });
+    });
   }
   renderIndices();
 
@@ -5789,9 +5809,22 @@ function initStockDetailModule() {
     const sym = symbol.toUpperCase().trim();
     currentLoadedSymbol = sym;
 
-    // Find stock from universe or master list
+    // Find stock from universe or master list (Including NIFTY 50 Benchmark)
     let stock = null;
-    if (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') {
+    if (sym === 'NIFTY 50' || sym === 'NIFTY' || sym === 'NIFTY50') {
+      const niftyLive = (typeof MAIN_PAGE_INDICES !== 'undefined') ? (MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY 50') || MAIN_PAGE_INDICES[0]) : null;
+      stock = {
+        symbol: 'NIFTY 50',
+        name: 'NIFTY 50 Benchmark Index',
+        price: niftyLive ? niftyLive.value : 22651.10,
+        change: niftyLive ? niftyLive.change : -98.65,
+        changePct: niftyLive ? niftyLive.changePct : -0.43,
+        high52: 26277.35,
+        low52: 21281.45,
+        sector: 'NSE Large-Cap Benchmark (50 Equities)',
+        confluence: 68
+      };
+    } else if (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') {
       stock = TRADE_NITI_MASTER_STOCKS.find(s => s.symbol.toUpperCase() === sym);
     }
     if (!stock) {
@@ -5900,7 +5933,17 @@ function initStockDetailModule() {
     let initDii = '16.20%';
 
     // Accurate preset for RELIANCE matching screenshot
-    if (sym === 'RELIANCE') {
+    if (sym === 'NIFTY 50' || sym === 'NIFTY' || sym === 'NIFTY50') {
+      initPe = '21.4';
+      initPb = '3.85';
+      initDiv = '1.28%';
+      initRoe = '16.50%';
+      initMktCap = '185.0 L Cr';
+      initMktCr = 18500000;
+      initPromoter = '51.20%';
+      initFii = '18.25%';
+      initDii = '16.50%';
+    } else if (sym === 'RELIANCE') {
       initPe = '21';
       initPb = '1.73';
       initDiv = '0.52%';
@@ -6277,11 +6320,21 @@ function initStockAnalysisCenterModule() {
       }
 
       const universe = (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') ? TRADE_NITI_MASTER_STOCKS : [];
-      const matches = universe.filter(s => 
+      let matches = universe.filter(s => 
         (s.symbol || '').toLowerCase().includes(query) || 
         (s.name || '').toLowerCase().includes(query) || 
         (s.sector || '').toLowerCase().includes(query)
       ).slice(0, 6);
+
+      if ('nifty 50'.includes(query) || 'nifty'.includes(query) || query === 'nifty50') {
+        const niftyLive = (typeof MAIN_PAGE_INDICES !== 'undefined') ? (MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY 50') || MAIN_PAGE_INDICES[0]) : null;
+        matches.unshift({
+          symbol: 'NIFTY 50',
+          name: 'NIFTY 50 Benchmark Index',
+          sector: 'NSE Large-Cap Benchmark',
+          price: niftyLive ? niftyLive.value : 22651.10
+        });
+      }
 
       if (matches.length === 0) {
         searchDropdown.innerHTML = `<div style="padding:10px; font-size:0.75rem; color:var(--text-muted); text-align:center;">No matching NSE stocks</div>`;
@@ -6470,9 +6523,22 @@ function initStockAnalysisCenterModule() {
     const sym = symbol.toUpperCase().trim();
     currentAnalysisSymbol = sym;
 
-    // Fetch stock info
+    // Fetch stock info (Including NIFTY 50 Benchmark)
     let stock = null;
-    if (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') {
+    if (sym === 'NIFTY 50' || sym === 'NIFTY' || sym === 'NIFTY50') {
+      const niftyLive = (typeof MAIN_PAGE_INDICES !== 'undefined') ? (MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY 50') || MAIN_PAGE_INDICES[0]) : null;
+      stock = {
+        symbol: 'NIFTY 50',
+        name: 'NIFTY 50 Benchmark Index',
+        price: niftyLive ? niftyLive.value : 22651.10,
+        change: niftyLive ? niftyLive.change : -98.65,
+        changePct: niftyLive ? niftyLive.changePct : -0.43,
+        high52: 26277.35,
+        low52: 21281.45,
+        sector: 'NSE Benchmark Index \u00B7 50 Large-Cap Equities',
+        confluence: 68
+      };
+    } else if (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') {
       stock = TRADE_NITI_MASTER_STOCKS.find(s => s.symbol.toUpperCase() === sym);
     }
     if (!stock) {
@@ -6523,7 +6589,7 @@ function initStockAnalysisCenterModule() {
     }
 
     if (tvChartBtn) {
-      tvChartBtn.href = `https://www.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(stock.symbol)}`;
+      tvChartBtn.href = (sym.includes("NIFTY") ? "https://www.tradingview.com/chart/?symbol=NSE:NIFTY" : `https://www.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(stock.symbol)}`);
     }
 
     // Hash for consistent deterministic indicators for any stock
@@ -6547,7 +6613,85 @@ function initStockAnalysisCenterModule() {
     let buyProb, overallSignal, entrySignal, riskLevel;
     let aiStatus, aiStatusCls, aiOverallText, aiMarketText, aiTechBullets, aiFundText, aiRisksBullets;
 
-    if (sym === 'ICICIBANK') {
+    if (sym === 'NIFTY 50' || sym === 'NIFTY' || sym === 'NIFTY50') {
+      scoreTotal = 68;
+      scoreBase = 68;
+      scoreMktAdj = 0;
+      sentimentText = '\uD83D\uDFE2 CONSTRUCTIVE (BULLISH BIAS)';
+      sentimentCls = 'bullish';
+      vitalsScore = '68/100';
+
+      h52 = 26277.35;
+      l52 = 21281.45;
+      from52H = -13.8;
+      from52HTag = { label: 'Consolidation', cls: 'amber' };
+      from52L = 6.4;
+      from52LTag = { label: 'Above Floor', cls: 'green' };
+      rangePct = 58;
+
+      rsiDaily = 54.8;
+      rsiDailyTag = { label: 'Constructive', cls: 'green' };
+      stochRsi = '0.65';
+      stochRsiTag = { label: 'Neutral', cls: 'neutral' };
+      rsiWeekly = 58.2;
+      rsiWeeklyTag = { label: 'Bullish', cls: 'green' };
+      rsiMonthly = 64.5;
+      rsiMonthlyTag = { label: 'Strong', cls: 'green' };
+
+      ema20 = 22580.40;
+      ema50 = 22410.20;
+      priceAboveEma20 = price >= ema20;
+      ema20AboveEma50 = true;
+      const vsEmaVal = (((price - ema20) / ema20) * 100);
+      priceVsEma20 = `${vsEmaVal >= 0 ? '+' : ''}${vsEmaVal.toFixed(2)}%`;
+
+      superTrendDaily = { val: 'UP \u2191', tag: 'Bullish (Stop 22,350)', cls: 'green' };
+      macdDaily = { val: 'BUY', tag: 'Bullish Cross', cls: 'green' };
+      macdHist = { val: '+42.150', tag: 'Positive Expansion', cls: 'green' };
+      adxDaily = { val: '23.8', tag: 'Active Trend', cls: 'green' };
+      diPlus = { val: 'Yes', tag: 'Bulls in control', cls: 'green' };
+      superTrendWeekly = { val: 'UP \u2191', tag: 'Bullish Support', cls: 'green' };
+      macdWeekly = { val: 'BUY', tag: 'Bullish', cls: 'green' };
+
+      bbPosDaily = { val: 'Middle Band', tag: 'Normal Volatility', cls: 'neutral' };
+      bbWidthDaily = '4.8210';
+      bbPosWeekly = { val: 'Upper Band', tag: 'Bullish Structure', cls: 'green' };
+
+      volRatio = { val: '1.12x avg', tag: 'Normal Volume', cls: 'green' };
+      volContext = 'Index Liquidity';
+      volSignal = { val: 'Healthy', tag: '28 Adv / 22 Dec', cls: 'green' };
+
+      atrVal = '\u20B9185.40 pts';
+      atrPct = { val: '0.82%', tag: 'Normal Index Range', cls: 'green' };
+
+      higherHigh = { val: 'Yes \u2713', tag: 'Bullish HH', cls: 'green' };
+      higherLow = { val: 'Yes \u2713', tag: 'Bullish HL', cls: 'green' };
+      lastSwingHigh = '\u20B923,100.50';
+      prevSwingHigh = '\u20B922,850.00';
+      lastSwingLow = '\u20B922,420.00';
+      prevSwingLow = '\u20B922,150.00';
+
+      buyProb = { val: '68/100', tag: 'CONSTRUCTIVE', cls: 'green' };
+      overallSignal = 'BULLISH BIAS';
+      entrySignal = 'Regime: GREEN \u00B7 SuperTrend BUY \u00B7 EMA-20 Support Holding at \u20B922,580 \u00B7 Trailing Stop: \u20B922,350';
+      riskLevel = { val: 'LOW - MODERATE', cls: 'green' };
+
+      aiStatus = '\uD83D\uDCC8 CONSTRUCTIVE (BULLISH BIAS)';
+      aiStatusCls = 'green';
+      aiOverallText = `NIFTY 50 (${stock.symbol}) is currently exhibiting a constructive market structure with an Algorithmic Confluence Score of 68/100. The benchmark index continues to hold firmly above its 20-day exponential moving average (\u20B922,580.40) and 50-day EMA (\u20B922,410.20), reflecting healthy institutional dip-buying across core blue-chip constituents.`;
+      aiMarketText = `Macro regime is classified as GREEN with positive market breadth (28 Advances vs 22 Declines). Banking (HDFCBANK, ICICIBANK) and IT (TCS, INFY) are providing structural equilibrium, offsetting selective profit booking in energy and commodities.`;
+      aiTechBullets = [
+        `Daily SuperTrend is firmly in BUY mode with trailing algorithmic stop placed at \u20B922,350.`,
+        `Daily RSI (14) at 54.8 indicates steady bullish momentum with no overbought exhaustion (StochRSI: 0.65).`,
+        `Higher High and Higher Low structure remains intact above previous swing trough of \u20B922,420; next immediate resistance sits at \u20B922,850 - \u20B923,100.`
+      ];
+      aiFundText = `Nifty 50 trades at a 1-year forward P/E of 21.4x, well within its 5-year historical fair value range (19x\u201324x). Robust domestic institutional (DII) systematic inflows of over \u20B95,000+ Cr per week continue to provide durable downside absorption.`;
+      aiRisksBullets = [
+        `Immediate resistance at \u20B922,850 \u2013 \u20B923,000 could prompt near-term supply absorption.`,
+        `FII index derivatives position remains slightly cautious, warranting strict stop-loss adherence.`,
+        `Key swing support at \u20B922,420 (EMA-50); breach could open downside testing towards \u20B922,000.`
+      ];
+    } else if (sym === 'ICICIBANK') {
       scoreTotal = 57;
       scoreBase = 57;
       scoreMktAdj = 0;
@@ -7079,16 +7223,27 @@ function initStockAnalysisCenterModule() {
     const peEst = (15 + ((sym.charCodeAt(0) * 7) % 35)).toFixed(1);
     const volEst = ((sym.charCodeAt(0) * 123456) % 15000000 + 500000);
 
-    if (ksOpen) ksOpen.textContent = '\u20B9' + openVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (ksHigh) ksHigh.textContent = '\u20B9' + highVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (ksLow) ksLow.textContent = '\u20B9' + lowVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (ks52High) ks52High.textContent = '\u20B9' + Math.round(h52).toLocaleString('en-IN');
-    if (ks52Low) ks52Low.textContent = '\u20B9' + Math.round(l52).toLocaleString('en-IN');
-    if (ksPe) ksPe.textContent = peEst;
-    if (ksVolume) ksVolume.textContent = volEst.toLocaleString('en-IN');
-    if (ksMktCap) {
-      const crVal = Math.round((price * volEst * 0.8) / 10000000);
-      ksMktCap.textContent = crVal > 100000 ? '\u20B9' + (crVal / 100000).toFixed(2) + 'L Cr' : '\u20B9' + crVal.toLocaleString('en-IN') + ' Cr';
+    if (sym === 'NIFTY 50' || sym === 'NIFTY' || sym === 'NIFTY50') {
+      if (ksOpen) ksOpen.textContent = '\u20B9' + (price * 1.002).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ksHigh) ksHigh.textContent = '\u20B9' + (price * 1.005).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ksLow) ksLow.textContent = '\u20B9' + (price * 0.996).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ks52High) ks52High.textContent = '\u20B926,277.35';
+      if (ks52Low) ks52Low.textContent = '\u20B921,281.45';
+      if (ksPe) ksPe.textContent = '21.4';
+      if (ksVolume) ksVolume.textContent = '285M';
+      if (ksMktCap) ksMktCap.textContent = '\u20B9185.0L Cr';
+    } else {
+      if (ksOpen) ksOpen.textContent = '\u20B9' + openVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ksHigh) ksHigh.textContent = '\u20B9' + highVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ksLow) ksLow.textContent = '\u20B9' + lowVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ks52High) ks52High.textContent = '\u20B9' + Math.round(h52).toLocaleString('en-IN');
+      if (ks52Low) ks52Low.textContent = '\u20B9' + Math.round(l52).toLocaleString('en-IN');
+      if (ksPe) ksPe.textContent = peEst;
+      if (ksVolume) ksVolume.textContent = volEst.toLocaleString('en-IN');
+      if (ksMktCap) {
+        const crVal = Math.round((price * volEst * 0.8) / 10000000);
+        ksMktCap.textContent = crVal > 100000 ? '\u20B9' + (crVal / 100000).toFixed(2) + 'L Cr' : '\u20B9' + crVal.toLocaleString('en-IN') + ' Cr';
+      }
     }
 
     // 6. Populate RSI Indicator (14) (Incorporated from In-Depth)
@@ -7158,7 +7313,17 @@ function initStockAnalysisCenterModule() {
     let initFii = '21.50%';
     let initDii = '16.20%';
 
-    if (sym === 'RELIANCE') {
+    if (sym === 'NIFTY 50' || sym === 'NIFTY' || sym === 'NIFTY50') {
+      initPe = '21.4';
+      initPb = '3.85';
+      initDiv = '1.28%';
+      initRoe = '16.50%';
+      initMktCap = '185.0 L Cr';
+      initMktCr = 18500000;
+      initPromoter = '51.20%';
+      initFii = '18.25%';
+      initDii = '16.50%';
+    } else if (sym === 'RELIANCE') {
       initPe = '21';
       initPb = '1.73';
       initDiv = '0.52%';
