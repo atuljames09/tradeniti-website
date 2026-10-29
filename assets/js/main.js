@@ -1018,9 +1018,15 @@ function initAuth() {
     if (userObj) {
       localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userObj));
       localStorage.setItem('trade_niti_user', userObj.fullName || userObj.username);
+      if (window.tradeNitiFirebase && typeof window.tradeNitiFirebase.syncUser === 'function') {
+        window.tradeNitiFirebase.syncUser(userObj);
+      }
     } else {
       localStorage.removeItem(CURRENT_USER_KEY);
       localStorage.removeItem('trade_niti_user');
+      if (window.tradeNitiFirebase && typeof window.tradeNitiFirebase.signOut === 'function') {
+        window.tradeNitiFirebase.signOut();
+      }
     }
   }
 
@@ -1177,7 +1183,7 @@ function initAuth() {
 
   // SIGN IN SUBMISSION
   if (signInForm) {
-    signInForm.addEventListener('submit', (e) => {
+    signInForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideMessages();
 
@@ -1189,6 +1195,23 @@ function initAuth() {
         return;
       }
 
+      // 1. Try Firebase Email/Password Auth if email is entered and Firebase is live
+      if (userOrEmail.includes('@') && window.tradeNitiFirebase && typeof window.tradeNitiFirebase.loginEmail === 'function') {
+        const fbRes = await window.tradeNitiFirebase.loginEmail(userOrEmail, pass);
+        if (fbRes && fbRes.success && fbRes.user) {
+          showBanner(loginSuccessBanner, 'Authentication successful! Loading Main Page...', false);
+          setCurrentUser(fbRes.user);
+          setTimeout(() => {
+            closeAuthModal();
+            renderAuthState();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast(`Welcome back, ${fbRes.user.fullName || fbRes.user.username}! Main Page opened.`, '✓');
+          }, 500);
+          return;
+        }
+      }
+
+      // 2. Demo Accounts and Local Storage Check
       const users = getRegisteredUsers();
       const matched = users.find(u =>
         (u.username.toLowerCase() === userOrEmail || u.email.toLowerCase() === userOrEmail) &&
@@ -1212,7 +1235,7 @@ function initAuth() {
 
   // REGISTRATION SUBMISSION
   if (registerForm) {
-    registerForm.addEventListener('submit', (e) => {
+    registerForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       hideMessages();
 
@@ -1252,21 +1275,37 @@ function initAuth() {
         return;
       }
 
+      // 1. Try Firebase Email Registration if Firebase is live
+      let firebaseUser = null;
+      if (window.tradeNitiFirebase && typeof window.tradeNitiFirebase.registerEmail === 'function') {
+        const fbRes = await window.tradeNitiFirebase.registerEmail(fullName, email, password);
+        if (fbRes && !fbRes.success && !fbRes.isLocal) {
+          showBanner(regErrorBanner, fbRes.error || 'Registration failed with Firebase.');
+          return;
+        }
+        if (fbRes && fbRes.user) {
+          firebaseUser = fbRes.user;
+        }
+      }
+
       // Generate random color for initial avatar
       const colors = ['#2563EB', '#059669', '#7C3AED', '#EA580C', '#0D9488'];
       const avatarColor = colors[Math.floor(Math.random() * colors.length)];
 
-      const newUser = {
+      const newUser = firebaseUser || {
         fullName,
         username,
         email,
         password,
         provider: 'local',
         initial: fullName.charAt(0).toUpperCase() || username.charAt(0).toUpperCase(),
-        color: avatarColor
+        color: avatarColor,
+        plan: 'free_trial',
+        subscriptionActive: true,
+        planExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       };
 
-      users.push(newUser);
+      users.push({ fullName, username, email, password, provider: newUser.provider });
       localStorage.setItem(DEFAULT_USERS_KEY, JSON.stringify(users));
 
       showBanner(regSuccessBanner, 'Account registered successfully! Signing you in...', false);

@@ -1,111 +1,203 @@
 /**
  * ============================================================================
- * Trade Niti - Firebase Authentication & Cloud Architecture
+ * Trade Niti - Production Firebase Authentication & Cloud Firestore
+ * Project: tradeniti-app
  * Company: AK Smart IT Solutions Pvt Ltd
  * ============================================================================
  * Supports:
- * 1. Google 1-Click Sign-In (OAuth Popup)
- * 2. Email / Password Registration & Login
- * 3. User Session State Sync across Browser & Mobile App
- * 4. Graceful Fallback Mode (Runs instantly even before adding production keys)
+ * 1. Google 1-Click Sign-In (OAuth Popup with Auto Firestore Profile Sync)
+ * 2. Cloud Firestore Real-time User Profile & Subscription Storage
+ * 3. Email & Password Authentication (with Local Fallback for Demo Accounts)
+ * 4. Cross-Platform Sync: Web App <-> Android Mobile App (Hardware PINs, Watchlists)
+ * 5. Friendly Error Handling (Popup Blocked, Unauthorized Domain Helper)
  */
 
-// 1. Firebase Project Configuration
-// NOTE: Replace these placeholder credentials with your Firebase Console Project keys:
-// https://console.firebase.google.com -> Project Settings -> General -> Your apps -> Web app
+// 1. Production Firebase Project Configuration
 const tradeNitiFirebaseConfig = {
-  apiKey: "AIzaSy_YOUR_FIREBASE_API_KEY_HERE",
+  apiKey: "AIzaSyAKzS7lBvCT_Ziv4KW4FjG2Hdj5SQWGuiQ",
   authDomain: "tradeniti-app.firebaseapp.com",
   projectId: "tradeniti-app",
-  storageBucket: "tradeniti-app.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:abcdef1234567890"
+  storageBucket: "tradeniti-app.firebasestorage.app",
+  messagingSenderId: "737193575107",
+  appId: "1:737193575107:web:94f4187cdaf8349a9e9876",
+  measurementId: "G-K67NNN0K9J"
 };
 
 let firebaseInitialized = false;
 let authInstance = null;
+let dbInstance = null;
 let googleAuthProvider = null;
 
 // 2. Initialize Firebase SDK safely
 function initTradeNitiFirebase() {
   if (typeof firebase !== 'undefined' && firebase.initializeApp) {
     try {
-      // Check if config has been customized by the owner
-      const isConfigured = tradeNitiFirebaseConfig.apiKey && 
-        !tradeNitiFirebaseConfig.apiKey.includes('YOUR_FIREBASE_API_KEY');
-
       if (!firebase.apps.length) {
-        if (isConfigured) {
-          firebase.initializeApp(tradeNitiFirebaseConfig);
-          authInstance = firebase.auth();
-          googleAuthProvider = new firebase.auth.GoogleAuthProvider();
-          googleAuthProvider.addScope('profile');
-          googleAuthProvider.addScope('email');
-          firebaseInitialized = true;
-          console.log('✅ Trade Niti: Live Firebase Auth initialized successfully.');
-        } else {
-          console.info('ℹ️ Trade Niti: Firebase Config contains template keys. Running in Interactive Ready Mode.');
-        }
+        firebase.initializeApp(tradeNitiFirebaseConfig);
+        authInstance = firebase.auth();
+        dbInstance = firebase.firestore ? firebase.firestore() : null;
+        googleAuthProvider = new firebase.auth.GoogleAuthProvider();
+        googleAuthProvider.addScope('profile');
+        googleAuthProvider.addScope('email');
+        googleAuthProvider.setCustomParameters({ prompt: 'select_account' });
+        firebaseInitialized = true;
+        console.log('✅ Trade Niti: Live Production Firebase (Auth + Firestore) initialized successfully for project: tradeniti-app.');
       } else {
         authInstance = firebase.auth();
+        dbInstance = firebase.firestore ? firebase.firestore() : null;
         firebaseInitialized = true;
       }
     } catch (err) {
-      console.warn('⚠️ Firebase initialization note:', err.message);
+      console.warn('⚠️ Trade Niti Firebase initialization note:', err.message);
     }
+  } else {
+    console.info('ℹ️ Firebase SDK loading in background...');
   }
 }
 
 /**
- * 3. Google Sign-In Handler
- * If live Firebase is configured, launches official Google OAuth popup.
- * If running in template/dev mode, presents the interactive Google account chooser.
+ * 3. Cloud Firestore User Sync Helper
+ * Automatically saves / merges user data to "users/{uid}" collection
+ */
+async function syncUserToFirestore(userObj) {
+  if (!firebaseInitialized || !dbInstance || !userObj) return;
+  try {
+    const uid = userObj.uid || (userObj.email ? 'local_' + btoa(userObj.email).replace(/=/g, '') : null);
+    if (!uid) return;
+
+    const docRef = dbInstance.collection('users').doc(uid);
+    const dataToSave = {
+      uid: uid,
+      fullName: userObj.fullName || '',
+      username: userObj.username || '',
+      email: userObj.email || '',
+      photoURL: userObj.photoURL || null,
+      provider: userObj.provider || 'local',
+      plan: userObj.plan || 'free_trial',
+      subscriptionActive: userObj.subscriptionActive !== undefined ? userObj.subscriptionActive : true,
+      planExpires: userObj.planExpires || null,
+      licensePin: userObj.licensePin || null,
+      paymentId: userObj.paymentId || null,
+      lastSeenAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    await docRef.set(dataToSave, { merge: true });
+    console.log('☁️ Synced user data with Cloud Firestore for:', uid);
+  } catch (err) {
+    console.warn('⚠️ Firestore sync note:', err.message);
+  }
+}
+
+/**
+ * 4. Google Sign-In Handler
+ * Launches official Google OAuth popup with Firestore document creation / restoration.
  */
 async function tradeNitiGoogleSignIn() {
   if (firebaseInitialized && authInstance) {
     try {
       const result = await authInstance.signInWithPopup(googleAuthProvider);
       const user = result.user;
+
+      let firestoreData = {};
+      if (dbInstance) {
+        try {
+          const docRef = dbInstance.collection('users').doc(user.uid);
+          const docSnap = await docRef.get();
+          if (docSnap.exists) {
+            firestoreData = docSnap.data();
+            await docRef.set({
+              lastLoginAt: firebase.firestore.FieldValue.serverTimestamp(),
+              email: user.email,
+              photoURL: user.photoURL || null
+            }, { merge: true });
+          } else {
+            firestoreData = {
+              uid: user.uid,
+              fullName: user.displayName || 'Google Trader',
+              username: (user.email || 'trader').split('@')[0],
+              email: user.email,
+              photoURL: user.photoURL || null,
+              provider: 'google',
+              plan: 'free_trial',
+              subscriptionActive: true,
+              planExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+              createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+              lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            await docRef.set(firestoreData);
+          }
+        } catch (dbErr) {
+          console.warn('Firestore profile sync note:', dbErr.message);
+        }
+      }
+
       const formattedUser = {
         uid: user.uid,
-        fullName: user.displayName || 'Google Trader',
+        fullName: user.displayName || firestoreData.fullName || 'Google Trader',
         username: (user.email || 'trader').split('@')[0],
         email: user.email,
-        photoURL: user.photoURL || null,
+        photoURL: user.photoURL || firestoreData.photoURL || null,
         provider: 'google',
         initial: (user.displayName || user.email || 'G').charAt(0).toUpperCase(),
         color: '#4285F4',
-        plan: 'free_trial',
-        planExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        plan: firestoreData.plan || 'free_trial',
+        subscriptionActive: firestoreData.subscriptionActive !== undefined ? firestoreData.subscriptionActive : true,
+        planExpires: firestoreData.planExpires || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        licensePin: firestoreData.licensePin || null
       };
+
       return { success: true, user: formattedUser };
     } catch (error) {
-      console.error('Firebase Google Sign-In Error:', error);
-      return { success: false, error: error.message };
+      console.warn('Firebase Google Sign-In Notice:', error.code, error.message);
+
+      // User closed popup window deliberately
+      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+        return { success: false, cancelled: true };
+      }
+
+      // Domain authorization notice
+      if (error.code === 'auth/unauthorized-domain') {
+        const currentDomain = window.location.hostname || 'current domain';
+        const msg = `Notice: "${currentDomain}" is not added in Firebase Console > Authentication > Settings > Authorized domains.`;
+        if (typeof window.showToast === 'function') {
+          window.showToast(msg, '⚠️');
+        }
+        alert(`Firebase Setup Instruction:\n\nDomain "${currentDomain}" is not yet listed under Authorized Domains in Firebase Console.\n\nPlease add "${currentDomain}" to:\nFirebase Console -> Authentication -> Settings -> Authorized domains.\n\nOpening the demo account chooser so you can continue testing immediately.`);
+      } else {
+        if (typeof window.showToast === 'function') {
+          window.showToast(`Firebase Auth: ${error.message}`, '⚠️');
+        }
+      }
+
+      // Fallback: Open interactive account chooser
+      return new Promise((resolve) => {
+        const googleModal = document.getElementById('googleSelectModal');
+        if (googleModal) googleModal.classList.add('active');
+        resolve({ success: false, fallbackToDevChooser: true });
+      });
     }
   }
 
-  // Dev / Template Mode Fallback: Open interactive Google chooser
+  // Fallback when offline or SDK not ready
   return new Promise((resolve) => {
     const googleModal = document.getElementById('googleSelectModal');
-    if (googleModal) {
-      googleModal.classList.add('active');
-    }
-    // Listen for custom trigger or resolution
+    if (googleModal) googleModal.classList.add('active');
     resolve({ success: true, isDevChooser: true });
   });
 }
 
 /**
- * 4. Email/Password Registration
+ * 5. Email/Password Registration
  */
 async function tradeNitiRegisterWithEmail(fullName, email, password) {
   if (firebaseInitialized && authInstance) {
     try {
       const userCred = await authInstance.createUserWithEmailAndPassword(email, password);
       const user = userCred.user;
-      await user.updateProfile({ displayName: fullName });
-      
+      try {
+        await user.updateProfile({ displayName: fullName });
+      } catch (pErr) {}
+
       const formattedUser = {
         uid: user.uid,
         fullName: fullName,
@@ -115,11 +207,23 @@ async function tradeNitiRegisterWithEmail(fullName, email, password) {
         initial: fullName.charAt(0).toUpperCase(),
         color: '#2563EB',
         plan: 'free_trial',
+        subscriptionActive: true,
         planExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       };
+
+      await syncUserToFirestore(formattedUser);
       return { success: true, user: formattedUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.warn('Firebase Register Error:', error.message);
+      let userFriendlyMsg = error.message;
+      if (error.code === 'auth/email-already-in-use') {
+        userFriendlyMsg = 'This email address is already registered. Please sign in instead.';
+      } else if (error.code === 'auth/weak-password') {
+        userFriendlyMsg = 'Password should be at least 6 characters.';
+      } else if (error.code === 'auth/invalid-email') {
+        userFriendlyMsg = 'Please enter a valid email address.';
+      }
+      return { success: false, error: userFriendlyMsg, code: error.code };
     }
   }
 
@@ -128,43 +232,63 @@ async function tradeNitiRegisterWithEmail(fullName, email, password) {
 }
 
 /**
- * 5. Email/Password Sign-In
+ * 6. Email/Password Sign-In
  */
 async function tradeNitiLoginWithEmail(email, password) {
   if (firebaseInitialized && authInstance) {
     try {
       const userCred = await authInstance.signInWithEmailAndPassword(email, password);
       const user = userCred.user;
+
+      let firestoreData = {};
+      if (dbInstance) {
+        try {
+          const docSnap = await dbInstance.collection('users').doc(user.uid).get();
+          if (docSnap.exists) firestoreData = docSnap.data();
+        } catch (e) {}
+      }
+
       const formattedUser = {
         uid: user.uid,
-        fullName: user.displayName || email.split('@')[0],
+        fullName: user.displayName || firestoreData.fullName || email.split('@')[0],
         username: email.split('@')[0],
         email: user.email,
-        photoURL: user.photoURL || null,
+        photoURL: user.photoURL || firestoreData.photoURL || null,
         provider: 'firebase_email',
         initial: (user.displayName || email).charAt(0).toUpperCase(),
         color: '#2563EB',
-        plan: 'free_trial'
+        plan: firestoreData.plan || 'free_trial',
+        subscriptionActive: firestoreData.subscriptionActive !== undefined ? firestoreData.subscriptionActive : true,
+        planExpires: firestoreData.planExpires || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        licensePin: firestoreData.licensePin || null
       };
+
+      await syncUserToFirestore(formattedUser);
       return { success: true, user: formattedUser };
     } catch (error) {
-      return { success: false, error: error.message };
+      console.warn('Firebase Login Error:', error.message);
+      let userFriendlyMsg = error.message;
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        userFriendlyMsg = 'Invalid email or password.';
+      }
+      return { success: false, error: userFriendlyMsg, code: error.code };
     }
   }
 
   // Local Storage Fallback
-  return { success: true, isLocal: true };
+  return { success: false, isLocal: true };
 }
 
 /**
- * 6. Sign Out
+ * 7. Sign Out
  */
 async function tradeNitiSignOut() {
   if (firebaseInitialized && authInstance) {
     try {
       await authInstance.signOut();
+      console.log('🚪 Signed out of Firebase session.');
     } catch (e) {
-      console.warn(e);
+      console.warn('Sign out note:', e.message);
     }
   }
 }
@@ -176,8 +300,11 @@ window.tradeNitiFirebase = {
   googleSignIn: tradeNitiGoogleSignIn,
   registerEmail: tradeNitiRegisterWithEmail,
   loginEmail: tradeNitiLoginWithEmail,
+  syncUser: syncUserToFirestore,
   signOut: tradeNitiSignOut,
-  isLive: () => firebaseInitialized
+  isLive: () => firebaseInitialized,
+  get auth() { return authInstance; },
+  get db() { return dbInstance; }
 };
 
 // Auto-run init when script loads
