@@ -9063,6 +9063,18 @@ body.dark-theme .ema-sac-pill:hover {
   color: var(--text-muted);
 }
 
+.user-plan-pill.app {
+  background: rgba(249, 115, 22, 0.15);
+  color: #F97316;
+  border: 1px solid rgba(249, 115, 22, 0.35);
+}
+
+.user-plan-pill.expired {
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
 /* Dark theme support for Pricing */
 body.dark-theme .pricing-card {
   background: var(--surface-card, #1E293B);
