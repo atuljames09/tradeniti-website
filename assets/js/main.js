@@ -6728,13 +6728,13 @@ function initStockAnalysisCenterModule() {
 
   function setSacC1Tab(view) {
     sacC1TabBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      setSacC1Tab(btn.getAttribute('data-view'));
-      const col = document.getElementById('sacColOverview');
-      if (col) col.scrollTo({ top: 0, behavior: 'smooth' });
-      const scrollBody = document.getElementById('sacScrollBody');
-      if (window.innerWidth <= 900 && scrollBody) scrollBody.scrollTo({ top: 0, behavior: 'smooth' });
+      if (btn.getAttribute('data-view') === view) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
     });
+    if (!sacSecTech || !sacSecFunds) return;
     if (view === 'all') {
       sacSecTech.style.display = 'flex';
       sacSecFunds.style.display = 'flex';
