@@ -9184,9 +9184,10 @@ body.dark-theme .pricing-card.featured {
   background: linear-gradient(180deg, rgba(59, 130, 246, 0.08) 0%, var(--surface-card) 40%);
 }
 /* ==========================================================================
-   NIFTY 50 Analysis Center Link & Card Enhancements
+   NIFTY 50 & SENSEX Analysis Center Link & Card Enhancements
    ========================================================================== */
-.index-card.index-card-nifty {
+.index-card.index-card-nifty,
+.index-card.index-card-benchmark {
   flex: 0 0 178px;
   min-width: 178px;
   border-color: rgba(99, 102, 241, 0.42);
@@ -9195,7 +9196,8 @@ body.dark-theme .pricing-card.featured {
   transition: all var(--transition-fast);
 }
 
-.index-card.index-card-nifty:hover {
+.index-card.index-card-nifty:hover,
+.index-card.index-card-benchmark:hover {
   transform: translateY(-2px);
   border-color: #6366F1;
   box-shadow: 0 4px 14px rgba(99, 102, 241, 0.22);
