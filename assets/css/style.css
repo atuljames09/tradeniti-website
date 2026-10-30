@@ -9284,3 +9284,127 @@ body.dark-theme .pricing-card.featured {
   color: #ffffff !important;
   transform: translateY(-1px) !important;
 }
+
+/* ==========================================================================
+   Stock Monitoring Center (SMC) Full Page Pro Lock Barrier
+   ========================================================================== */
+.smc-page-section {
+  position: relative !important;
+  min-height: 480px;
+}
+
+.smc-full-lock-barrier {
+  position: absolute;
+  inset: 0;
+  z-index: 95;
+  background: rgba(10, 15, 29, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  border-radius: 12px;
+}
+
+.smc-lock-card {
+  max-width: 560px;
+  width: 100%;
+  background: var(--surface-card, #111827);
+  border: 1.5px solid rgba(239, 68, 68, 0.35);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.55), 0 0 35px rgba(239, 68, 68, 0.15);
+  border-radius: 16px;
+  padding: 34px 28px;
+  text-align: center;
+}
+
+.smc-lock-icon {
+  font-size: 2.6rem;
+  margin-bottom: 12px;
+}
+
+.smc-lock-badge {
+  display: inline-block;
+  font-size: 0.70rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: #EF4444;
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  padding: 3px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.smc-lock-title {
+  font-size: 1.30rem;
+  font-weight: 800;
+  color: var(--text-primary, #F9FAFB);
+  margin: 0 0 10px 0;
+}
+
+.smc-lock-desc {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-secondary, #9CA3AF);
+  margin: 0 0 18px 0;
+}
+
+.smc-lock-features-list {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 10px;
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 0.82rem;
+  color: var(--text-primary, #F3F4F6);
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.smc-lock-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--profit-green, #10B981);
+  font-weight: 600;
+}
+
+.smc-lock-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.smc-lock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  font-size: 0.88rem;
+  font-weight: 750;
+}
+
+.smc-lock-btn-annual {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  font-size: 0.88rem;
+  font-weight: 750;
+  background: rgba(99, 102, 241, 0.15);
+  color: #818CF8;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: var(--radius-md, 8px);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.smc-lock-btn-annual:hover {
+  background: rgba(99, 102, 241, 0.28);
+  border-color: #818CF8;
+  color: #ffffff;
+}
