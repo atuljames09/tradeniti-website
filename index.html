@@ -411,7 +411,33 @@
     </section>
 
     <!-- 3. STOCK MONITORING CENTER (SMC) SECTION (Authenticated View Menu 3) -->
-    <section class="smc-page-section" id="smc-page" style="display:none;">
+    <section class="smc-page-section" id="smc-page" style="display:none; position: relative;">
+      <!-- Full Page Lock Barrier for Trial Expired Users -->
+      <div id="smcFullPageLockBarrier" class="smc-full-lock-barrier" style="display: none;">
+        <div class="smc-lock-card">
+          <div class="smc-lock-icon">🔒</div>
+          <span class="smc-lock-badge">PRO FEATURE</span>
+          <h3 class="smc-lock-title">Stock Monitoring Center (SMC) Locked</h3>
+          <p class="smc-lock-desc">
+            Your 7-Day Free Trial has ended. Real-time institutional surveillance tower, &plusmn;3% Momentum Threshold Ratio (MTR) radar, and background audio alerts are exclusively available on Monthly Pro (&#8377;499) and Annual VIP Bundle.
+          </p>
+          <div class="smc-lock-features-list">
+            <div class="smc-lock-feature-item">&#10003; Real-time &plusmn;3% MTR swing breakout radar</div>
+            <div class="smc-lock-feature-item">&#10003; Institutional price channel violation detection</div>
+            <div class="smc-lock-feature-item">&#10003; 30-second background polling audio notifications</div>
+            <div class="smc-lock-feature-item">&#10003; Automated support &amp; resistance level validation</div>
+          </div>
+          <div class="smc-lock-actions">
+            <button type="button" class="btn-primary smc-lock-btn" onclick="if(window.openFeatureGateModal) window.openFeatureGateModal('smc');">
+              <span>Unlock with Monthly Pro (&#8377;499/mo)</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+            <button type="button" class="btn-secondary smc-lock-btn-annual" onclick="if(window.initiatePlanSubscription) window.initiatePlanSubscription('pro_annual');">
+              <span>Get Annual VIP Bundle (&#8377;3,999/yr)</span>
+            </button>
+          </div>
+        </div>
+      </div>
       <div class="container">
         <!-- SMC Free Trial Pro Gate Warning Banner (Shown only when plan is free_trial) -->
         <div id="smcProGateBanner" style="display: none; background: rgba(37, 99, 235, 0.08); border: 1.5px solid rgba(37, 99, 235, 0.4); border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;">
