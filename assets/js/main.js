@@ -1593,7 +1593,7 @@ function initAuth() {
         navLinksList.innerHTML = `
           <li><a href="#main-page" class="nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
           <li><a href="#watchlist-page" class="nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
-          <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc"><span>Stock Monitoring Center (SMC)</span>${smcNavLock}</a></li>
+          <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc" title="Stock Monitoring Center (SMC)"><span class="nav-text-full">Stock Monitoring (SMC)</span><span class="nav-text-short">SMC</span>${smcNavLock}</a></li>
           <li><a href="#news-page" class="nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
         `;
         navLinksList.querySelectorAll('.nav-link').forEach(link => {
