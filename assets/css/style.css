@@ -8821,6 +8821,100 @@ body.dark-theme .ema-sac-pill:hover {
 
 
 
+/* SAC Section Lock Overlays (Vital Technicals & AI Report Locked on Expired Trial) */
+.sac-vitals-card,
+.sac-ai-report-card {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.sac-lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(15, 23, 42, 0.93);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 20px;
+  text-align: center;
+  border-radius: inherit;
+  box-sizing: border-box;
+}
+
+[data-theme="light"] .sac-lock-overlay {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.sac-lock-box {
+  max-width: 380px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: auto;
+}
+
+.sac-lock-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  color: #EF4444;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.sac-lock-badge {
+  font-size: 0.68rem;
+  font-weight: 850;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #EF4444;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.sac-lock-title {
+  font-size: 1.12rem;
+  font-weight: 850;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+  line-height: 1.3;
+}
+
+.sac-lock-desc {
+  font-size: 0.80rem;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 0 0 16px;
+}
+
+.sac-btn-unlock-pro {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 18px;
+  font-size: 0.84rem;
+  font-weight: 750;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 /* ==========================================================================
    Pricing & Subscription Plans Section (Commercial System)
    ========================================================================== */
