@@ -214,6 +214,7 @@ function checkFeatureAccess(featureKey) {
     case 'news_articles':
     case 'community':
     case 'nifty_analysis':
+    case 'fiidii': // FII/DII Daily Activity is Unlocked on Trial Expired
       return { allowed: true, plan: sub.plan };
 
     // 2. Web Pro features:
@@ -268,25 +269,39 @@ function checkFeatureAccess(featureKey) {
         ]
       };
 
-    case 'fiidii':
+    case 'vital_technicals':
       if (sub.isProWeb) return { allowed: true, plan: sub.plan };
       return {
         allowed: false,
         reason: 'trial_expired',
-        title: 'Daily FII / DII Flow Intelligence (Pro Feature)',
-        message: 'Daily foreign and domestic institutional equity buying/selling flow data is available on Monthly Pro (₹499) and Annual VIP Bundle.',
+        title: 'Vital Technicals Breakdown (Pro Feature)',
+        message: 'Your 7-Day Free Trial has ended. Full quantitative breakdown across 12+ technical indicators (RSI, MACD, EMAs, SuperTrend, Bollinger Bands, ATR) is exclusively available on Monthly Pro (₹499) and Annual VIP Bundle.',
         requiredPlan: 'pro_monthly',
         features: [
-          'Provisional net turnover cash market values',
-          'Institutional absorption and support analysis',
-          'Impact analysis on Indian equity swing setups',
-          'Direct historical activity table with live refresh'
+          'Full 12+ technical indicator quantitative matrix',
+          'RSI, StochRSI, MACD & SuperTrend multi-timeframe confirmation',
+          'EMA 20 & EMA 50 trend slope analysis',
+          'Bollinger Bands volatility & ATR risk management'
+        ]
+      };
+
+    case 'ai_report':
+      if (sub.isProWeb) return { allowed: true, plan: sub.plan };
+      return {
+        allowed: false,
+        reason: 'trial_expired',
+        title: 'AI Analysis Report (Pro Feature)',
+        message: 'Your 7-Day Free Trial has ended. Groq AI Llama 3 70B directional verdict, market context impact, and technical risk rationale are exclusively available on Monthly Pro (₹499) and Annual VIP.',
+        requiredPlan: 'pro_monthly',
+        features: [
+          'Groq AI Llama 3 70B fast inference stock synthesis',
+          'Directional verdict & confluence rating',
+          'Institutional order flow & volume absorption rationale',
+          'Key risk parameters & trailing stop-loss guidance'
         ]
       };
 
     case 'analysis_center':
-      // During active 7-day trial or paid pro: All 360+ stocks accessible
-      // When trial expired: Nifty 50 accessible, others prompt upgrade
       if (sub.isProWeb) return { allowed: true, plan: sub.plan };
       return {
         allowed: true,

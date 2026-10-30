@@ -1651,6 +1651,11 @@ function initAuth() {
         smcGateBanner.style.display = sub.isProWeb ? 'none' : 'block';
       }
 
+      const sidebarScreenerLock = document.getElementById('sidebarScreenerLockBadge');
+      if (sidebarScreenerLock) {
+        sidebarScreenerLock.style.display = sub.isProWeb ? 'none' : 'inline-block';
+      }
+
       const logoutBtn = document.getElementById('authLogoutBtn');
       if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
@@ -4827,11 +4832,23 @@ function initSidebarDrawer() {
       closeSidebar();
       if (!getCurrentUser()) {
         if (typeof showToast === 'function') {
-          showToast('Please Sign In to access 360+ Market Screener.', 'ðŸ”’');
+          showToast('Please Sign In to access 360+ Market Screener.', '🔒');
         }
         if (typeof openAuthModal === 'function') openAuthModal('signin');
         return;
       }
+
+      // Feature Gate: Lock Screener in sidebar when trial is expired!
+      if (typeof window.checkFeatureAccess === 'function') {
+        const access = window.checkFeatureAccess('screener');
+        if (!access.allowed) {
+          if (typeof window.openFeatureGateModal === 'function') {
+            window.openFeatureGateModal('screener');
+          }
+          return;
+        }
+      }
+
       if (typeof window.openScreenerModal === 'function') {
         window.openScreenerModal();
       }
@@ -7537,6 +7554,19 @@ function initStockAnalysisCenterModule() {
 
     // Default to Unified View on open
     setActiveTab('all');
+
+    // Feature Gating: Lock Vital Technicals & AI Report on Expired Trial (for all stocks except NIFTY 50 Benchmark)
+    const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
+      ? window.tradeNitiSubscription.check()
+      : { isProWeb: false };
+
+    const isNifty50 = (sym === 'NIFTY 50' || sym === 'NIFTY50' || sym === '^NSEI');
+    const isLocked = !sub.isProWeb && !isNifty50;
+
+    const vitalsOverlay = document.getElementById('sacVitalsLockOverlay');
+    const aiOverlay = document.getElementById('sacAiLockOverlay');
+    if (vitalsOverlay) vitalsOverlay.style.display = isLocked ? 'flex' : 'none';
+    if (aiOverlay) aiOverlay.style.display = isLocked ? 'flex' : 'none';
 
     // Open Modal
     if (sacModal) sacModal.classList.add('active');
