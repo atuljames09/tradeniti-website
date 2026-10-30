@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initStockAnalysisCenterModule();
   initScrollSpy();
   initMobileMenu();
+  initFeatureGating();
 });
 
 /* ==========================================================================
@@ -1457,6 +1458,19 @@ function initAuth() {
       if (window.renderSmcModule) {
         window.renderSmcModule();
       }
+      if (typeof window.checkFeatureAccess === 'function') {
+        const access = window.checkFeatureAccess('smc');
+        const smcGateBanner = document.getElementById('smcProGateBanner');
+        if (smcGateBanner) {
+          smcGateBanner.style.display = access.allowed ? 'none' : 'block';
+        }
+        if (!access.allowed && !sessionStorage.getItem('tn_smc_gate_shown')) {
+          sessionStorage.setItem('tn_smc_gate_shown', '1');
+          if (typeof window.openFeatureGateModal === 'function') {
+            window.openFeatureGateModal('smc');
+          }
+        }
+      }
     } else if (tab === 'news') {
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'none';
@@ -1587,16 +1601,27 @@ function initAuth() {
       const displayName = user.fullName || user.username || 'Trader';
       const bgColor = user.color || '#2563EB';
 
+      const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
+        ? window.tradeNitiSubscription.check()
+        : { isExpired: false, isProWeb: true, daysRemaining: 7 };
+
       const plan = user.plan || 'free_trial';
-      const planBadge = plan === 'pro_annual' 
-        ? `<span class="user-plan-pill annual">VIP ANNUAL</span>`
-        : (plan === 'pro_monthly' 
-           ? `<span class="user-plan-pill pro">PRO</span>` 
-           : `<span class="user-plan-pill free">FREE TRIAL</span>`);
+      let planBadge = `<span class="user-plan-pill free">FREE TRIAL</span>`;
+      if (plan === 'pro_annual') {
+        planBadge = `<span class="user-plan-pill annual">VIP ANNUAL</span>`;
+      } else if (plan === 'pro_monthly') {
+        planBadge = `<span class="user-plan-pill pro">PRO</span>`;
+      } else if (plan === 'app_standalone') {
+        planBadge = `<span class="user-plan-pill app">APP LICENSE</span>`;
+      } else if (sub.isExpired) {
+        planBadge = `<span class="user-plan-pill expired">TRIAL EXPIRED</span>`;
+      } else if (sub.daysRemaining > 0) {
+        planBadge = `<span class="user-plan-pill free">FREE TRIAL (${sub.daysRemaining}d)</span>`;
+      }
 
       authWrapper.innerHTML = `
         <div class="auth-btn-group" style="display:flex; align-items:center; gap:8px;">
-          <div class="auth-user-pill" title="Signed in as ${user.email || displayName} â€¢ Plan: ${plan}">
+          <div class="auth-user-pill" id="navAuthUserPill" style="cursor: pointer;" title="Signed in as ${user.email || displayName} • Plan: ${plan} (Click to manage subscription & test plans)">
             <span class="auth-user-avatar" style="background:${bgColor}; color:#FFFFFF;">
               ${initial}
             </span>
@@ -1611,6 +1636,20 @@ function initAuth() {
           </button>
         </div>
       `;
+
+      const userPill = document.getElementById('navAuthUserPill');
+      if (userPill) {
+        userPill.addEventListener('click', () => {
+          if (typeof window.openUserAccountModal === 'function') {
+            window.openUserAccountModal();
+          }
+        });
+      }
+
+      const smcGateBanner = document.getElementById('smcProGateBanner');
+      if (smcGateBanner) {
+        smcGateBanner.style.display = sub.isProWeb ? 'none' : 'block';
+      }
 
       const logoutBtn = document.getElementById('authLogoutBtn');
       if (logoutBtn) {
@@ -4749,6 +4788,15 @@ function initSidebarDrawer() {
   }
 
   function openFiiDiiModal() {
+    if (typeof window.checkFeatureAccess === 'function') {
+      const access = window.checkFeatureAccess('fiidii');
+      if (!access.allowed) {
+        if (typeof window.openFeatureGateModal === 'function') {
+          window.openFeatureGateModal('fiidii');
+        }
+        return;
+      }
+    }
     fetchLiveFiiDii();
     renderFiiDiiTable();
     if (fiidiiModal) fiidiiModal.classList.add('active');
@@ -5139,11 +5187,22 @@ function initScreenerModalModule() {
       return screenerModalSortAsc ? (vA - vB) : (vB - vA);
     });
 
+    const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check) 
+      ? window.tradeNitiSubscription.check() 
+      : { isProWeb: false };
+
+    let isPreviewOnly = !sub.isProWeb;
+    let displayList = isPreviewOnly ? list.slice(0, 10) : list;
+
     // Update Status Bar
     if (showingStats) {
       const colLabel = screenerModalSortColumn.replace('_', ' ');
       const arrow = screenerModalSortAsc ? '&#9650;' : '&#9660;';
-      showingStats.innerHTML = `Showing ${list.length} stocks &bull; Sorted by: ${colLabel} ${arrow}`;
+      if (isPreviewOnly) {
+        showingStats.innerHTML = `Showing 10 of ${list.length} stocks (Starter Trial Preview) &bull; <a href="javascript:void(0)" onclick="if(window.openFeatureGateModal) window.openFeatureGateModal('screener');" style="color:var(--brand-blue); font-weight:750; text-decoration:underline;">Unlock All 360+ Pro</a>`;
+      } else {
+        showingStats.innerHTML = `Showing ${list.length} stocks &bull; Sorted by: ${colLabel} ${arrow}`;
+      }
     }
 
     if (list.length === 0) {
@@ -5159,7 +5218,7 @@ function initScreenerModalModule() {
     }
 
     // Render 6 columns with Frozen Col 1 (1-to-1 matching Mobile App ScreenerStockRow)
-    tableBody.innerHTML = list.map(stock => {
+    let rowsHtml = displayList.map(stock => {
       const isUp = (stock.changePct || 0) >= 0;
       const sign = isUp ? '+' : '';
       const analysis = stock.analysisPct || stock.confluence || 50;
@@ -5211,6 +5270,28 @@ function initScreenerModalModule() {
         </tr>
       `;
     }).join('');
+
+    if (isPreviewOnly && list.length > 10) {
+      rowsHtml += `
+        <tr class="screener-pro-lock-row">
+          <td colspan="6" style="text-align: center; padding: 26px 16px; background: rgba(37, 99, 235, 0.04); border-top: 2px dashed rgba(37, 99, 235, 0.3);">
+            <div style="font-size: 1rem; font-weight: 850; color: var(--text-primary); margin-bottom: 4px;">
+              🔒 350+ More Stocks Locked in Starter Trial
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px; max-width: 520px; margin-left: auto; margin-right: auto;">
+              Upgrade to <strong>Monthly Pro (₹499)</strong> or <strong>Annual VIP Bundle</strong> to unlock the complete 360+ Indian equities market screener with frozen sticky columns &amp; live sorting.
+            </div>
+            <div style="display: flex; justify-content: center; gap: 10px;">
+              <button type="button" class="btn-primary" onclick="if(window.openFeatureGateModal) window.openFeatureGateModal('screener');" style="padding: 8px 18px; font-size: 0.82rem; font-weight: 750;">
+                Unlock All 360+ Stocks (₹499)
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }
+
+    tableBody.innerHTML = rowsHtml;
 
     // Attach row click listeners (matches onStockClick(stock.symbol))
     tableBody.querySelectorAll('tr[data-stock-symbol]').forEach(row => {
@@ -5664,6 +5745,15 @@ function initEmaCollideModalModule() {
 
   // 10. Open Modal Function
   window.openEmaCollideModal = function() {
+    if (typeof window.checkFeatureAccess === 'function') {
+      const access = window.checkFeatureAccess('ema_collide');
+      if (!access.allowed) {
+        if (typeof window.openFeatureGateModal === 'function') {
+          window.openFeatureGateModal('ema_collide');
+        }
+        return;
+      }
+    }
     trackedEmaSymbols = loadTrackedSymbols();
     trackedEmaRows = trackedEmaSymbols.map(sym => generateStockEmaRow(sym));
     renderEmaCollideTable();
@@ -7451,4 +7541,40 @@ function initStockAnalysisCenterModule() {
     // Open Modal
     if (sacModal) sacModal.classList.add('active');
   };
+}
+
+/* ==========================================================================
+   Categorized Plan & Feature Access Gating Initializer
+   ========================================================================== */
+function initFeatureGating() {
+  // 1. Intercept APK download buttons across website
+  document.querySelectorAll('a[href*="TradeNiti_v1.0.apk"]').forEach(link => {
+    link.addEventListener('click', (e) => {
+      if (typeof window.checkFeatureAccess === 'function') {
+        const access = window.checkFeatureAccess('mobile_app');
+        if (!access.allowed) {
+          e.preventDefault();
+          if (typeof window.openFeatureGateModal === 'function') {
+            window.openFeatureGateModal('mobile_app');
+          }
+          return;
+        }
+      }
+      const user = (typeof window.getCurrentUser === 'function') ? window.getCurrentUser() : null;
+      if (user && user.licensePin && typeof window.showToast === 'function') {
+        window.showToast(`Downloading Trade Niti APK • Hardware PIN: ${user.licensePin}`, '⭐');
+      }
+    });
+  });
+
+  // 2. Wire pricing cards subscription buttons
+  document.querySelectorAll('[data-plan-subscribe]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const planId = btn.getAttribute('data-plan-subscribe');
+      if (window.tradeNitiSubscription && typeof window.tradeNitiSubscription.subscribe === 'function') {
+        window.tradeNitiSubscription.subscribe(planId);
+      }
+    });
+  });
 }
