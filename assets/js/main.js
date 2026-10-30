@@ -81,7 +81,7 @@ function initTicker() {
   if (!track) return;
 
   const renderItems = (items) => items.map(item => `
-    <div class="ticker-item">
+    <div class="ticker-item" data-ticker-sym="${item.symbol}" style="cursor: pointer;" title="Open Analysis Center for ${item.symbol}">
       <span class="ticker-name">${item.symbol}</span>
       <span class="ticker-price">${item.price}</span>
       <span class="${item.up ? 'ticker-up' : 'ticker-down'}">${item.change}</span>
@@ -89,6 +89,15 @@ function initTicker() {
   `).join('');
 
   track.innerHTML = renderItems(MARKET_TICKER_DATA) + renderItems(MARKET_TICKER_DATA);
+
+  track.querySelectorAll('.ticker-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const sym = el.getAttribute('data-ticker-sym');
+      if (sym && typeof window.openStockAnalysisCenter === 'function') {
+        window.openStockAnalysisCenter(sym);
+      }
+    });
+  });
 }
 
 /* ==========================================================================
@@ -1930,20 +1939,22 @@ function initMainPageDashboard() {
   // Reset seconds ago every 30s
   setInterval(() => { secondsAgo = 0; }, 30000);
 
-  // 2. Render All 8 Indices (With NIFTY 50 Stock Analysis Center Link)
+  // 2. Render All 8 Indices (With NIFTY 50 & SENSEX Stock Analysis Center Links)
   function renderIndices() {
     carouselTrack.innerHTML = MAIN_PAGE_INDICES.map(idx => {
       const isUp = idx.change >= 0;
       const badgeCls = isUp ? 'profit' : 'loss';
       const sign = isUp ? '+' : '';
       const isNifty50 = (idx.name === 'NIFTY 50' || idx.name === 'NIFTY');
+      const isSensex = (idx.name === 'SENSEX');
+      const isBenchmark = isNifty50 || isSensex;
 
       return `
-        <div class="index-card ${isNifty50 ? 'index-card-nifty' : ''}" data-index-symbol="${idx.name}" title="${idx.name} - ${idx.constituents} Constituents">
+        <div class="index-card ${isBenchmark ? 'index-card-benchmark' : ''} ${isNifty50 ? 'index-card-nifty' : ''}" data-index-symbol="${idx.name}" title="${idx.name} - ${idx.constituents} Constituents">
           <div class="index-card-top-row" style="display:flex; align-items:center; justify-content:space-between; gap:4px; margin-bottom:2px;">
             <div class="index-card-name" style="margin:0;">${idx.name}</div>
-            ${isNifty50 ? `
-              <a href="javascript:void(0)" class="link-stock-analysis index-sac-pill" data-action="stock-analysis" data-symbol="NIFTY 50" title="Open Stock Analysis Center for NIFTY 50">
+            ${isBenchmark ? `
+              <a href="javascript:void(0)" class="link-stock-analysis index-sac-pill" data-action="stock-analysis" data-symbol="${idx.name}" title="Open Stock Analysis Center for ${idx.name}">
                 <span>Analysis Center</span>
                 <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
               </a>
@@ -1957,12 +1968,13 @@ function initMainPageDashboard() {
       `;
     }).join('');
 
-    // Clicking anywhere on NIFTY 50 card opens Stock Analysis Center
-    carouselTrack.querySelectorAll('.index-card-nifty').forEach(card => {
+    // Clicking anywhere on NIFTY 50 or SENSEX card opens Stock Analysis Center
+    carouselTrack.querySelectorAll('.index-card-benchmark, .index-card-nifty').forEach(card => {
       card.addEventListener('click', (e) => {
         if (e.target.closest('a') || e.target.closest('button')) return;
+        const sym = card.getAttribute('data-index-symbol') || 'NIFTY 50';
         if (typeof window.openStockAnalysisCenter === 'function') {
-          window.openStockAnalysisCenter('NIFTY 50');
+          window.openStockAnalysisCenter(sym);
         }
       });
     });
@@ -6089,6 +6101,16 @@ function initStockDetailModule() {
       initPromoter = '51.20%';
       initFii = '18.25%';
       initDii = '16.50%';
+    } else if (sym === 'SENSEX' || sym === 'BSE SENSEX' || sym === 'BSESENSEX' || sym === '^BSESN') {
+      initPe = '23.8';
+      initPb = '3.65';
+      initDiv = '1.15%';
+      initRoe = '15.80%';
+      initMktCap = '140.5 L Cr';
+      initMktCr = 14050000;
+      initPromoter = '48.50%';
+      initFii = '24.10%';
+      initDii = '17.40%';
     } else if (sym === 'RELIANCE') {
       initPe = '21';
       initPb = '1.73';
@@ -6482,6 +6504,16 @@ function initStockAnalysisCenterModule() {
         });
       }
 
+      if ('sensex'.includes(query) || 'bse sensex'.includes(query) || query === 'bse' || query === 'bsesn') {
+        const sensexLive = (typeof MAIN_PAGE_INDICES !== 'undefined') ? (MAIN_PAGE_INDICES.find(i => i.name === 'SENSEX')) : null;
+        matches.unshift({
+          symbol: 'SENSEX',
+          name: 'BSE SENSEX 30 Benchmark Index',
+          sector: 'BSE Large-Cap Benchmark · 30 Blue-Chips',
+          price: sensexLive ? sensexLive.value : 80812.15
+        });
+      }
+
       if (matches.length === 0) {
         searchDropdown.innerHTML = `<div style="padding:10px; font-size:0.75rem; color:var(--text-muted); text-align:center;">No matching NSE stocks</div>`;
         searchDropdown.classList.add('active');
@@ -6669,7 +6701,7 @@ function initStockAnalysisCenterModule() {
     const sym = symbol.toUpperCase().trim();
     currentAnalysisSymbol = sym;
 
-    // Fetch stock info (Including NIFTY 50 Benchmark)
+    // Fetch stock info (Including NIFTY 50 & BSE SENSEX Benchmarks)
     let stock = null;
     if (sym === 'NIFTY 50' || sym === 'NIFTY' || sym === 'NIFTY50') {
       const niftyLive = (typeof MAIN_PAGE_INDICES !== 'undefined') ? (MAIN_PAGE_INDICES.find(i => i.name === 'NIFTY 50') || MAIN_PAGE_INDICES[0]) : null;
@@ -6681,8 +6713,21 @@ function initStockAnalysisCenterModule() {
         changePct: niftyLive ? niftyLive.changePct : -0.43,
         high52: 26277.35,
         low52: 21281.45,
-        sector: 'NSE Benchmark Index \u00B7 50 Large-Cap Equities',
+        sector: 'NSE Benchmark Index · 50 Large-Cap Equities',
         confluence: 68
+      };
+    } else if (sym === 'SENSEX' || sym === 'BSE SENSEX' || sym === 'BSESENSEX' || sym === '^BSESN') {
+      const sensexLive = (typeof MAIN_PAGE_INDICES !== 'undefined') ? (MAIN_PAGE_INDICES.find(i => i.name === 'SENSEX')) : null;
+      stock = {
+        symbol: 'SENSEX',
+        name: 'BSE SENSEX 30 Benchmark Index',
+        price: sensexLive ? sensexLive.value : 80812.15,
+        change: sensexLive ? sensexLive.change : 428.10,
+        changePct: sensexLive ? sensexLive.changePct : 0.53,
+        high52: 85978.25,
+        low52: 70319.04,
+        sector: 'BSE Benchmark Index · 30 Blue-Chip Equities',
+        confluence: 71
       };
     } else if (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') {
       stock = TRADE_NITI_MASTER_STOCKS.find(s => s.symbol.toUpperCase() === sym);
@@ -6720,7 +6765,13 @@ function initStockAnalysisCenterModule() {
 
     if (sacStockSymbol) sacStockSymbol.textContent = stock.symbol;
     if (sacStockName) sacStockName.textContent = stock.name;
-    if (sacSectorBadge) sacSectorBadge.textContent = `${stock.sector || 'Equities'} · NSE`;
+    if (sacSectorBadge) {
+      if (stock.sector && (stock.sector.includes('NSE') || stock.sector.includes('BSE'))) {
+        sacSectorBadge.textContent = stock.sector;
+      } else {
+        sacSectorBadge.textContent = `${stock.sector || 'Equities'} · NSE`;
+      }
+    }
     if (jumpAiSym) jumpAiSym.textContent = stock.symbol;
     if (jumpVtSym) jumpVtSym.textContent = stock.symbol;
     if (aiSymHeader) aiSymHeader.textContent = stock.symbol;
@@ -6735,7 +6786,13 @@ function initStockAnalysisCenterModule() {
     }
 
     if (tvChartBtn) {
-      tvChartBtn.href = (sym.includes("NIFTY") ? "https://www.tradingview.com/chart/?symbol=NSE:NIFTY" : `https://www.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(stock.symbol)}`);
+      if (sym.includes("NIFTY")) {
+        tvChartBtn.href = "https://www.tradingview.com/chart/?symbol=NSE:NIFTY";
+      } else if (sym === "SENSEX" || sym.includes("SENSEX") || sym === "BSESN") {
+        tvChartBtn.href = "https://www.tradingview.com/chart/?symbol=BSE:SENSEX";
+      } else {
+        tvChartBtn.href = `https://www.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(stock.symbol)}`;
+      }
     }
 
     // Hash for consistent deterministic indicators for any stock
@@ -6836,6 +6893,84 @@ function initStockAnalysisCenterModule() {
         `Immediate resistance at \u20B922,850 \u2013 \u20B923,000 could prompt near-term supply absorption.`,
         `FII index derivatives position remains slightly cautious, warranting strict stop-loss adherence.`,
         `Key swing support at \u20B922,420 (EMA-50); breach could open downside testing towards \u20B922,000.`
+      ];
+    } else if (sym === 'SENSEX' || sym === 'BSE SENSEX' || sym === 'BSESENSEX' || sym === '^BSESN') {
+      scoreTotal = 71;
+      scoreBase = 71;
+      scoreMktAdj = 0;
+      sentimentText = '\uD83D\uDFE2 CONSTRUCTIVE (BULLISH BIAS)';
+      sentimentCls = 'bullish';
+      vitalsScore = '71/100';
+
+      h52 = 85978.25;
+      l52 = 70319.04;
+      from52H = -6.0;
+      from52HTag = { label: 'Near High', cls: 'green' };
+      from52L = 14.9;
+      from52LTag = { label: 'Above Floor', cls: 'green' };
+      rangePct = 68;
+
+      rsiDaily = 56.4;
+      rsiDailyTag = { label: 'Constructive', cls: 'green' };
+      stochRsi = '0.68';
+      stochRsiTag = { label: 'Neutral', cls: 'neutral' };
+      rsiWeekly = 59.8;
+      rsiWeeklyTag = { label: 'Bullish', cls: 'green' };
+      rsiMonthly = 66.2;
+      rsiMonthlyTag = { label: 'Strong', cls: 'green' };
+
+      ema20 = 80150.80;
+      ema50 = 79480.50;
+      priceAboveEma20 = price >= ema20;
+      ema20AboveEma50 = true;
+      const vsEmaValSensex = (((price - ema20) / ema20) * 100);
+      priceVsEma20 = `${vsEmaValSensex >= 0 ? '+' : ''}${vsEmaValSensex.toFixed(2)}%`;
+
+      superTrendDaily = { val: 'UP \u2191', tag: 'Bullish (Stop 79,250)', cls: 'green' };
+      macdDaily = { val: 'BUY', tag: 'Bullish Cross', cls: 'green' };
+      macdHist = { val: '+138.40', tag: 'Positive Expansion', cls: 'green' };
+      adxDaily = { val: '24.6', tag: 'Active Trend', cls: 'green' };
+      diPlus = { val: 'Yes', tag: 'Bulls in control', cls: 'green' };
+      superTrendWeekly = { val: 'UP \u2191', tag: 'Bullish Support', cls: 'green' };
+      macdWeekly = { val: 'BUY', tag: 'Bullish', cls: 'green' };
+
+      bbPosDaily = { val: 'Upper Band Zone', tag: 'Bullish Structure', cls: 'green' };
+      bbWidthDaily = '5.1420';
+      bbPosWeekly = { val: 'Upper Band', tag: 'Bullish Structure', cls: 'green' };
+
+      volRatio = { val: '1.15x avg', tag: 'Normal Volume', cls: 'green' };
+      volContext = 'BSE Blue-Chip Liquidity';
+      volSignal = { val: 'Healthy', tag: '19 Adv / 11 Dec', cls: 'green' };
+
+      atrVal = '\u20B9610.50 pts';
+      atrPct = { val: '0.76%', tag: 'Normal Index Range', cls: 'green' };
+
+      higherHigh = { val: 'Yes \u2713', tag: 'Bullish HH', cls: 'green' };
+      higherLow = { val: 'Yes \u2713', tag: 'Bullish HL', cls: 'green' };
+      lastSwingHigh = '\u20B981,250.00';
+      prevSwingHigh = '\u20B980,500.00';
+      lastSwingLow = '\u20B979,400.00';
+      prevSwingLow = '\u20B978,850.00';
+
+      buyProb = { val: '71/100', tag: 'CONSTRUCTIVE', cls: 'green' };
+      overallSignal = 'BULLISH BIAS';
+      entrySignal = 'Regime: GREEN \u00B7 SuperTrend BUY \u00B7 EMA-20 Support Holding at \u20B980,150 \u00B7 Trailing Stop: \u20B979,250';
+      riskLevel = { val: 'LOW - MODERATE', cls: 'green' };
+
+      aiStatus = '\uD83D\uDCC8 CONSTRUCTIVE (BULLISH BIAS)';
+      aiStatusCls = 'green';
+      aiOverallText = `BSE SENSEX (${stock.symbol}) is currently exhibiting a resilient bullish market structure with an Algorithmic Confluence Score of 71/100. The 30-share premier benchmark index continues to trade comfortably above its 20-day exponential moving average (\u20B980,150.80) and 50-day EMA (\u20B979,480.50), reflecting sustained institutional accumulation across India's largest conglomerates.`;
+      aiMarketText = `Macro regime is classified as GREEN with positive market breadth across frontline blue-chips (19 Advances vs 11 Declines). Strong relative leadership from IT majors (TCS, INFY) and Banking leaders (HDFCBANK, ICICIBANK, SBIN) is providing durable structural thrust.`;
+      aiTechBullets = [
+        `Daily SuperTrend is firmly positioned in BUY mode with algorithmic trailing stop placed at \u20B979,250.`,
+        `Daily RSI (14) at 56.4 confirms healthy trend momentum with no sign of overbought exhaustion (StochRSI: 0.68).`,
+        `Consecutive Higher High and Higher Low swing sequence remains intact above key support floor of \u20B979,400; immediate overhead resistance is positioned at \u20B981,250 - \u20B981,800.`
+      ];
+      aiFundText = `BSE SENSEX trades at a forward P/E of 23.8x against its 5-year historical fair value corridor (21x\u201326x). Unabated domestic institutional (DII) systematic mutual fund inflows exceeding \u20B923,000+ Cr monthly provide a resilient downside absorption anchor against global headwinds.`;
+      aiRisksBullets = [
+        `Immediate profit taking near \u20B981,250 \u2013 \u20B982,000 psychological threshold could prompt temporary price pauses.`,
+        `Global macroeconomic headlines, US Treasury yields, and crude oil volatility remain key monitoring metrics.`,
+        `Key swing support sits at \u20B979,480 (EMA-50); violation could trigger extended healthy consolidation toward \u20B978,500.`
       ];
     } else if (sym === 'ICICIBANK') {
       scoreTotal = 57;
@@ -7378,6 +7513,15 @@ function initStockAnalysisCenterModule() {
       if (ksPe) ksPe.textContent = '21.4';
       if (ksVolume) ksVolume.textContent = '285M';
       if (ksMktCap) ksMktCap.textContent = '\u20B9185.0L Cr';
+    } else if (sym === 'SENSEX' || sym === 'BSE SENSEX' || sym === 'BSESENSEX' || sym === '^BSESN') {
+      if (ksOpen) ksOpen.textContent = '\u20B9' + (price * 1.002).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ksHigh) ksHigh.textContent = '\u20B9' + (price * 1.004).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ksLow) ksLow.textContent = '\u20B9' + (price * 0.995).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      if (ks52High) ks52High.textContent = '\u20B985,978.25';
+      if (ks52Low) ks52Low.textContent = '\u20B970,319.04';
+      if (ksPe) ksPe.textContent = '23.8';
+      if (ksVolume) ksVolume.textContent = '142M';
+      if (ksMktCap) ksMktCap.textContent = '\u20B9140.5L Cr';
     } else {
       if (ksOpen) ksOpen.textContent = '\u20B9' + openVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       if (ksHigh) ksHigh.textContent = '\u20B9' + highVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -7469,6 +7613,16 @@ function initStockAnalysisCenterModule() {
       initPromoter = '51.20%';
       initFii = '18.25%';
       initDii = '16.50%';
+    } else if (sym === 'SENSEX' || sym === 'BSE SENSEX' || sym === 'BSESENSEX' || sym === '^BSESN') {
+      initPe = '23.8';
+      initPb = '3.65';
+      initDiv = '1.15%';
+      initRoe = '15.80%';
+      initMktCap = '140.5 L Cr';
+      initMktCr = 14050000;
+      initPromoter = '48.50%';
+      initFii = '24.10%';
+      initDii = '17.40%';
     } else if (sym === 'RELIANCE') {
       initPe = '21';
       initPb = '1.73';

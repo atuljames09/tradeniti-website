@@ -214,6 +214,7 @@ function checkFeatureAccess(featureKey) {
     case 'news_articles':
     case 'community':
     case 'nifty_analysis':
+    case 'sensex_analysis':
     case 'fiidii': // FII/DII Daily Activity is Unlocked on Trial Expired
       return { allowed: true, plan: sub.plan };
 
