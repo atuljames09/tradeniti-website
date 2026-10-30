@@ -1460,6 +1460,25 @@ function initAuth() {
         window.renderActiveWatchlist();
       }
     } else if (tab === 'smc') {
+      // Pro Feature Gating: Lock SMC for Trial Expired users
+      if (typeof window.checkFeatureAccess === 'function') {
+        const access = window.checkFeatureAccess('smc');
+        if (!access.allowed) {
+          if (typeof window.openFeatureGateModal === 'function') {
+            window.openFeatureGateModal('smc');
+          }
+          if (typeof window.showToast === 'function') {
+            window.showToast('Stock Monitoring Center (SMC) is available on Pro Monthly (\u20B9499) and Annual VIP.', '\uD83D\uDD12');
+          }
+          if (currentAuthTab === 'smc') {
+            currentAuthTab = 'main';
+            window.currentAuthTab = 'main';
+            if (mainSec) mainSec.style.display = 'block';
+            if (smcSec) smcSec.style.display = 'none';
+          }
+          return;
+        }
+      }
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'none';
       if (smcSec) smcSec.style.display = 'block';
@@ -1467,19 +1486,8 @@ function initAuth() {
       if (window.renderSmcModule) {
         window.renderSmcModule();
       }
-      if (typeof window.checkFeatureAccess === 'function') {
-        const access = window.checkFeatureAccess('smc');
-        const smcGateBanner = document.getElementById('smcProGateBanner');
-        if (smcGateBanner) {
-          smcGateBanner.style.display = access.allowed ? 'none' : 'block';
-        }
-        if (!access.allowed && !sessionStorage.getItem('tn_smc_gate_shown')) {
-          sessionStorage.setItem('tn_smc_gate_shown', '1');
-          if (typeof window.openFeatureGateModal === 'function') {
-            window.openFeatureGateModal('smc');
-          }
-        }
-      }
+      const smcBarrier = document.getElementById('smcFullPageLockBarrier');
+      if (smcBarrier) smcBarrier.style.display = 'none';
     } else if (tab === 'news') {
       if (mainSec) mainSec.style.display = 'none';
       if (wlSec) wlSec.style.display = 'none';
@@ -1538,6 +1546,16 @@ function initAuth() {
       if (authDashboard) authDashboard.style.display = 'block';
       if (guestLanding) guestLanding.style.display = 'none';
 
+      const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
+        ? window.tradeNitiSubscription.check()
+        : { isExpired: false, isProWeb: true, daysRemaining: 7 };
+
+      // Feature Gate: Prevent Trial Expired users from staying on SMC view
+      if (currentAuthTab === 'smc' && !sub.isProWeb) {
+        currentAuthTab = 'main';
+        window.currentAuthTab = 'main';
+      }
+
       // Toggle active view between Main Page, Watchlist, SMC, and News
       const mainSec = document.getElementById('main-page');
       const wlSec = document.getElementById('watchlist-page');
@@ -1568,18 +1586,29 @@ function initAuth() {
         if (window.renderNewsModule) window.renderNewsModule();
       }
 
+      const smcNavLock = !sub.isProWeb ? '<span class="nav-smc-lock-badge" style="font-size:0.65rem; font-weight:800; background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid rgba(239,68,68,0.3); padding:1px 6px; border-radius:4px; margin-left:6px;">🔒 PRO</span>' : '';
+
       // Authenticated Navbar: ONLY the 4 Core Menus (No pricing/overview as requested)
       if (navLinksList) {
         navLinksList.innerHTML = `
           <li><a href="#main-page" class="nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
           <li><a href="#watchlist-page" class="nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
-          <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
+          <li><a href="#smc-page" class="nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc"><span>Stock Monitoring Center (SMC)</span>${smcNavLock}</a></li>
           <li><a href="#news-page" class="nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
         `;
         navLinksList.querySelectorAll('.nav-link').forEach(link => {
           link.addEventListener('click', (e) => {
             e.preventDefault();
             const view = link.getAttribute('data-view');
+            if (view === 'smc' && !sub.isProWeb) {
+              if (typeof window.openFeatureGateModal === 'function') {
+                window.openFeatureGateModal('smc');
+              }
+              if (typeof window.showToast === 'function') {
+                window.showToast('Stock Monitoring Center (SMC) is available on Pro Monthly (\u20B9499) and Annual VIP.', '\uD83D\uDD12');
+              }
+              return;
+            }
             window.switchAuthTab(view);
           });
         });
@@ -1591,13 +1620,23 @@ function initAuth() {
           mobileNavUl.innerHTML = `
             <li><a href="#main-page" class="mobile-nav-link ${currentAuthTab === 'main' ? 'active' : ''}" data-view="main">Main Page</a></li>
             <li><a href="#watchlist-page" class="mobile-nav-link ${currentAuthTab === 'watchlist' ? 'active' : ''}" data-view="watchlist">Watchlist</a></li>
-            <li><a href="#smc-page" class="mobile-nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc">Stock Monitoring Center (SMC)</a></li>
+            <li><a href="#smc-page" class="mobile-nav-link ${currentAuthTab === 'smc' ? 'active' : ''}" data-view="smc"><span>Stock Monitoring Center (SMC)</span>${smcNavLock}</a></li>
             <li><a href="#news-page" class="mobile-nav-link ${currentAuthTab === 'news' ? 'active' : ''}" data-view="news">News</a></li>
           `;
           mobileNavUl.querySelectorAll('.mobile-nav-link').forEach(link => {
             link.addEventListener('click', (e) => {
               e.preventDefault();
               const view = link.getAttribute('data-view');
+              if (view === 'smc' && !sub.isProWeb) {
+                if (typeof window.openFeatureGateModal === 'function') {
+                  window.openFeatureGateModal('smc');
+                }
+                if (typeof window.showToast === 'function') {
+                  window.showToast('Stock Monitoring Center (SMC) is available on Pro Monthly (\u20B9499) and Annual VIP.', '\uD83D\uDD12');
+                }
+                mobileNavDrawer.classList.remove('active');
+                return;
+              }
               window.switchAuthTab(view);
               mobileNavDrawer.classList.remove('active');
             });
@@ -1609,10 +1648,6 @@ function initAuth() {
       const initial = user.initial || (user.fullName ? user.fullName.charAt(0).toUpperCase() : 'T');
       const displayName = user.fullName || user.username || 'Trader';
       const bgColor = user.color || '#2563EB';
-
-      const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
-        ? window.tradeNitiSubscription.check()
-        : { isExpired: false, isProWeb: true, daysRemaining: 7 };
 
       const plan = user.plan || 'free_trial';
       let planBadge = `<span class="user-plan-pill free">FREE TRIAL</span>`;
@@ -3488,6 +3523,15 @@ function initSmcModule() {
 
   // Render SMC Table & Metrics
   function renderSmc() {
+    const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
+      ? window.tradeNitiSubscription.check()
+      : { isProWeb: false };
+
+    const smcBarrier = document.getElementById('smcFullPageLockBarrier');
+    if (smcBarrier) {
+      smcBarrier.style.display = sub.isProWeb ? 'none' : 'flex';
+    }
+
     const entries = getSmcEntries();
     const notes = (typeof window.getStockNotesShared === 'function') ? window.getStockNotesShared() : {};
 
