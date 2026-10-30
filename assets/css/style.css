@@ -8094,25 +8094,49 @@ body.dark-theme .ema-sac-pill:hover {
   color: #475569;
 }
 
-/* Column 1 Quick View Switcher */
+/* Column 1 Quick View Switcher (Frozen Sticky Header) */
+.sac-c1-tabs-sticky-wrap {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 35;
+  background: var(--bg-primary, #0A0D14);
+  padding: 3px 0 5px 0;
+  margin-top: -2px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background-color var(--transition-fast);
+}
+
+[data-theme="light"] .sac-c1-tabs-sticky-wrap {
+  background: #F1F5F9;
+  border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
 .sac-c1-tabs {
   display: flex;
   gap: 4px;
   background: var(--surface-card, #131929);
-  padding: 3px;
+  padding: 3px 4px;
   border-radius: 999px;
   border: 1px solid var(--border-subtle);
-  margin-bottom: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.28);
+}
+
+[data-theme="light"] .sac-c1-tabs {
+  background: #FFFFFF;
+  border-color: #CBD5E1;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
 .sac-c1-tab-btn {
   flex: 1;
-  padding: 3px 6px;
+  padding: 4px 6px;
   border-radius: 999px;
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.64rem;
+  font-size: 0.65rem;
   font-weight: 750;
   cursor: pointer;
   transition: all var(--transition-fast);
@@ -8129,7 +8153,22 @@ body.dark-theme .ema-sac-pill:hover {
 .sac-c1-tab-btn.active {
   background: var(--brand-blue, #2563EB);
   color: #FFFFFF;
-  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
+}
+
+[data-theme="light"] .sac-c1-tab-btn {
+  color: #64748B;
+}
+
+[data-theme="light"] .sac-c1-tab-btn:hover {
+  color: #0F172A;
+  background: #F1F5F9;
+}
+
+[data-theme="light"] .sac-c1-tab-btn.active {
+  background: #2563EB;
+  color: #FFFFFF;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
 }
 
 .sac-c1-sec-group {
@@ -8814,6 +8853,10 @@ body.dark-theme .ema-sac-pill:hover {
   .sac-grid-col {
     height: auto;
     overflow-y: visible;
+  }
+  .sac-c1-tabs-sticky-wrap {
+    top: -8px;
+    padding-top: 8px;
   }
   .sac-vitals-blocks-grid {
     grid-template-columns: 1fr;
