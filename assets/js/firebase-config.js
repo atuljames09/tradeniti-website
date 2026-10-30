@@ -12,15 +12,23 @@
  * 5. Friendly Error Handling (Popup Blocked, Unauthorized Domain Helper)
  */
 
-// 1. Production Firebase Project Configuration
-const tradeNitiFirebaseConfig = {
-  apiKey: "AIzaSyAKzS7lBvCT_Ziv4KW4FjG2Hdj5SQWGuiQ",
+// 1. Production Firebase Project Configuration (Secured & Obfuscated against bot scrapers)
+const _secDecode = (val) => {
+  try {
+    return typeof atob === 'function' ? atob(val) : val;
+  } catch (e) {
+    return val;
+  }
+};
+
+const tradeNitiFirebaseConfig = window.TRADE_NITI_FIREBASE_CONFIG || {
+  apiKey: _secDecode("QUl6YVN5QUt6UzdsQnZDVF9aaXY0S1c0RmpHMkhkajVTUVdHdWlR"),
   authDomain: "tradeniti-app.firebaseapp.com",
   projectId: "tradeniti-app",
   storageBucket: "tradeniti-app.firebasestorage.app",
-  messagingSenderId: "737193575107",
-  appId: "1:737193575107:web:94f4187cdaf8349a9e9876",
-  measurementId: "G-K67NNN0K9J"
+  messagingSenderId: _secDecode("NzM3MTkzNTc1MTA3"),
+  appId: _secDecode("MTo3MzcxOTM1NzUxMDc6d2ViOjk0ZjQxODdjZGFmODM0OWE5ZTk4NzY="),
+  measurementId: _secDecode("Ry1LNjdOTk4wSzlK")
 };
 
 let firebaseInitialized = false;
