@@ -9408,3 +9408,100 @@ body.dark-theme .pricing-card.featured {
   border-color: #818CF8;
   color: #ffffff;
 }
+
+/* ==========================================================================
+   Calibrated Navbar & Navigation Dock Positioning (Anti-Overlap)
+   ========================================================================== */
+.navbar .nav-container {
+  max-width: 1440px !important;
+  width: 100% !important;
+  gap: 14px !important;
+  padding: 0 20px !important;
+}
+
+.nav-left-group {
+  flex-shrink: 0 !important;
+  min-width: max-content !important;
+}
+
+.brand-wrapper {
+  flex-shrink: 0 !important;
+}
+
+.nav-actions {
+  flex-shrink: 0 !important;
+  min-width: max-content !important;
+}
+
+.nav-center-dock {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+  margin: 0 8px !important;
+}
+
+.nav-links {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  list-style: none !important;
+  background: var(--surface-chip) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-full) !important;
+  padding: 3px 5px !important;
+  flex-shrink: 0 !important;
+}
+
+.nav-link {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 6px 11px !important;
+  border-radius: var(--radius-full) !important;
+  font-size: 0.80rem !important;
+  font-weight: 650 !important;
+  color: var(--text-secondary) !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
+}
+
+.nav-text-short {
+  display: none !important;
+}
+
+.nav-text-full {
+  display: inline !important;
+}
+
+.auth-user-pill {
+  padding: 4px 10px 4px 5px !important;
+  font-size: 0.82rem !important;
+  gap: 6px !important;
+}
+
+.auth-btn-logout {
+  padding: 6px 12px !important;
+  font-size: 0.80rem !important;
+}
+
+@media (max-width: 1240px) {
+  .nav-text-full {
+    display: none !important;
+  }
+  .nav-text-short {
+    display: inline !important;
+  }
+  .brand-company {
+    display: none !important;
+  }
+  .nav-link {
+    padding: 5px 9px !important;
+    font-size: 0.78rem !important;
+  }
+  .navbar .nav-container {
+    gap: 8px !important;
+    padding: 0 14px !important;
+  }
+}
