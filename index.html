@@ -72,7 +72,10 @@
                 </svg>
               </div>
               <div class="sidebar-text-col">
-                <span class="sidebar-item-title">Market Screener</span>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:6px;">
+                  <span class="sidebar-item-title">Market Screener</span>
+                  <span id="sidebarScreenerLockBadge" class="sidebar-lock-badge" style="display:none; font-size:0.65rem; font-weight:800; background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid rgba(239,68,68,0.3); padding:1px 6px; border-radius:4px;">🔒 PRO</span>
+                </div>
                 <span class="sidebar-item-subtitle">All 360+ Stocks &bull; Technical Analysis %</span>
               </div>
             </a>
@@ -3415,7 +3418,23 @@
                COLUMN 2: Full Vital Technicals Breakdown (Screenshot 2)
                ========================================== -->
           <div class="sac-grid-col sac-col-vitals" id="sacColVitals">
-            <div class="sac-card sac-vitals-card">
+            <div class="sac-card sac-vitals-card" style="position: relative; overflow: hidden;">
+              <!-- Pro Lock Overlay (Shown when 7-Day Free Trial is Expired) -->
+              <div class="sac-lock-overlay" id="sacVitalsLockOverlay" style="display: none;">
+                <div class="sac-lock-box">
+                  <div class="sac-lock-icon">🔒</div>
+                  <span class="sac-lock-badge">PRO FEATURE</span>
+                  <h4 class="sac-lock-title">Vital Technicals Locked</h4>
+                  <p class="sac-lock-desc">
+                    Your 7-Day Free Trial has ended. Full quantitative breakdown across 12+ technical indicators (RSI, MACD, EMAs, SuperTrend, Bollinger Bands, ATR) is exclusively available on Monthly Pro (&#8377;499) and Annual VIP Bundle.
+                  </p>
+                  <button type="button" class="btn-primary sac-btn-unlock-pro" onclick="if(window.openFeatureGateModal) window.openFeatureGateModal('vital_technicals');">
+                    <span>Unlock Vital Technicals (&#8377;499/mo)</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
+
               <div class="sac-vitals-header">
                 <div>
                   <h3 class="sac-vitals-title"><span id="sacVitalsStockSym">TECHM</span> Vital Technicals</h3>
@@ -3775,7 +3794,22 @@
                COLUMN 3: AI Analysis Report (Screenshot 1)
                ========================================== -->
           <div class="sac-grid-col sac-col-ai" id="sacColAi">
-            <div class="sac-card sac-ai-report-card">
+            <div class="sac-card sac-ai-report-card" style="position: relative; overflow: hidden;">
+              <!-- Pro Lock Overlay (Shown when 7-Day Free Trial is Expired) -->
+              <div class="sac-lock-overlay" id="sacAiLockOverlay" style="display: none;">
+                <div class="sac-lock-box">
+                  <div class="sac-lock-icon">🔒</div>
+                  <span class="sac-lock-badge">PRO FEATURE</span>
+                  <h4 class="sac-lock-title">AI Analysis Report Locked</h4>
+                  <p class="sac-lock-desc">
+                    Groq AI Llama 3 70B directional verdict, market context impact, and technical risk rationale are exclusively available on Monthly Pro (&#8377;499) and Annual VIP Bundle.
+                  </p>
+                  <button type="button" class="btn-primary sac-btn-unlock-pro" onclick="if(window.openFeatureGateModal) window.openFeatureGateModal('ai_report');">
+                    <span>Unlock AI Report (&#8377;499/mo)</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                  </button>
+                </div>
+              </div>
               
               <!-- AI Header -->
               <div class="sac-ai-header">
