@@ -406,6 +406,25 @@
     <!-- 3. STOCK MONITORING CENTER (SMC) SECTION (Authenticated View Menu 3) -->
     <section class="smc-page-section" id="smc-page" style="display:none;">
       <div class="container">
+        <!-- SMC Free Trial Pro Gate Warning Banner (Shown only when plan is free_trial) -->
+        <div id="smcProGateBanner" style="display: none; background: rgba(37, 99, 235, 0.08); border: 1.5px solid rgba(37, 99, 235, 0.4); border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 1.4rem;">🔒</span>
+              <div>
+                <div style="font-size: 0.92rem; font-weight: 800; color: var(--text-primary);">
+                  Stock Monitoring Center (SMC) &plusmn;3% MTR is a Pro Feature
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 2px;">
+                  You are viewing preview mode on Starter Trial. Upgrade to Monthly Pro (&#8377;499) or Annual VIP for real-time institutional alerts.
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn-primary" onclick="if(window.openFeatureGateModal) window.openFeatureGateModal('smc');" style="padding: 7px 16px; font-size: 0.80rem; font-weight: 750;">
+              Upgrade to Pro (&#8377;499)
+            </button>
+          </div>
+        </div>
         <!-- SMC Top Header Bar -->
         <div class="smc-top-header">
           <div class="smc-header-left">
@@ -2660,6 +2679,141 @@
 
       <button type="button" class="btn-secondary" id="btnDismissSuccessModal" style="width: 100%; padding: 8px; font-size: 0.80rem;">
         Start Trading Now
+      </button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       Feature Access Gate / Pro Upgrade Modal
+       (Triggered when a Free Trial or Standalone user clicks a Pro Feature)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="featureGateModal" style="z-index: 10080;">
+    <div class="modal-dialog" style="max-width: 480px; width: 92vw; padding: 26px;">
+      <button class="modal-close-btn" id="closeFeatureGateModalBtn" aria-label="Close">&times;</button>
+      
+      <!-- Lock Header -->
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--border-subtle);">
+        <div style="width: 44px; height: 44px; border-radius: 10px; background: rgba(239, 68, 68, 0.12); color: #EF4444; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;">
+          🔒
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span id="gateRequiredBadge" class="badge badge-accent" style="font-size: 0.68rem; padding: 2px 7px; text-transform: uppercase;">PRO FEATURE</span>
+            <span id="gateCurrentPlanPill" style="font-size: 0.68rem; color: var(--text-muted);">Current: Starter Trial</span>
+          </div>
+          <h3 id="gateModalTitle" style="margin: 3px 0 0; font-size: 1.15rem; font-weight: 850; color: var(--text-primary);">Feature Locked</h3>
+        </div>
+      </div>
+
+      <!-- Message Description -->
+      <p id="gateModalMessage" style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.55; margin: 0 0 14px;">
+        This institutional tool is exclusively available on Monthly Pro or Annual VIP Bundle plans.
+      </p>
+
+      <!-- Included Features List -->
+      <div style="background: var(--surface-chip); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px;">
+        <div style="font-size: 0.72rem; font-weight: 750; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 8px;">
+          What You Unlock With Pro:
+        </div>
+        <ul id="gateFeaturesList" style="margin: 0; padding-left: 18px; font-size: 0.82rem; color: var(--text-primary); line-height: 1.6;">
+          <!-- Populated dynamically -->
+        </ul>
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <button type="button" id="btnGateUpgradeMonthly" class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px; font-size: 0.88rem; font-weight: 750;">
+          <span>Subscribe Monthly (₹499/mo)</span>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+
+        <button type="button" id="btnGateUpgradeAnnual" class="btn-secondary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-size: 0.84rem; font-weight: 700; border-color: rgba(37,99,235,0.4);">
+          <span>⭐ Get Annual VIP + Mobile App Bundle (₹3,999/yr)</span>
+        </button>
+
+        <button type="button" id="btnGateDismiss" class="btn-secondary" style="padding: 7px; font-size: 0.78rem; color: var(--text-muted); border: none;">
+          Continue with Free Starter Features
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       User Account & Subscription Details Modal
+       (Allows viewing plan, hardware PIN, APK download, and quick plan testing)
+       ========================================================================== -->
+  <div class="modal-backdrop" id="userAccountModal" style="z-index: 10075;">
+    <div class="modal-dialog" style="max-width: 500px; width: 92vw; padding: 24px;">
+      <button class="modal-close-btn" id="closeUserAccountModalBtn" aria-label="Close">&times;</button>
+      
+      <!-- User Profile Header -->
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid var(--border-subtle);">
+        <div id="uamUserAvatar" style="width: 52px; height: 52px; border-radius: 50%; background: #2563EB; color: #FFF; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; font-weight: 800; flex-shrink: 0;">
+          T
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <h3 id="uamUserName" style="margin: 0; font-size: 1.15rem; font-weight: 800; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            Trader
+          </h3>
+          <p id="uamUserEmail" style="margin: 2px 0 0; font-size: 0.78rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            user@example.com
+          </p>
+        </div>
+        <div id="uamPlanBadge">
+          <span class="user-plan-pill free">FREE TRIAL</span>
+        </div>
+      </div>
+
+      <!-- Plan Details Box -->
+      <div style="background: var(--surface-chip); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 14px; margin-bottom: 14px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.74rem; font-weight: 750; color: var(--text-muted); text-transform: uppercase;">Active Subscription Plan</span>
+          <span id="uamPlanName" style="font-size: 0.82rem; font-weight: 800; color: var(--brand-blue);">Starter Trial (7 Days)</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <span style="font-size: 0.74rem; font-weight: 750; color: var(--text-muted); text-transform: uppercase;">Status &amp; Validity</span>
+          <span id="uamPlanExpiry" style="font-size: 0.80rem; font-weight: 700; color: var(--profit-green);">Active (7 Days remaining)</span>
+        </div>
+        <div id="uamPinRow" style="display: none; justify-content: space-between; align-items: center; padding-top: 8px; border-top: 1px dashed var(--border-subtle);">
+          <span style="font-size: 0.74rem; font-weight: 750; color: var(--text-muted); text-transform: uppercase;">Hardware Activation PIN</span>
+          <span id="uamLicensePin" style="font-size: 0.95rem; font-weight: 900; color: var(--brand-navy, #1E3A8A); font-family: monospace; letter-spacing: 0.05em;">TN-7842-9914</span>
+        </div>
+      </div>
+
+      <!-- App Download Row (Unlocked for Annual VIP or App License) -->
+      <div id="uamAppDownloadRow" style="margin-bottom: 14px; display: none;">
+        <a href="./downloads/TradeNiti_v1.0.apk" download class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; font-size: 0.82rem; text-decoration: none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span>Download Android App APK (23.1 MB)</span>
+        </a>
+      </div>
+
+      <!-- Quick Plan Switcher for Testing all 4 Categorized Plans -->
+      <div style="background: rgba(37, 99, 235, 0.04); border: 1px dashed rgba(37, 99, 235, 0.25); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 0.72rem; font-weight: 750; color: var(--brand-blue); text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 5px;">
+          <span>⚡ Switch Plan (Interactive Demo &amp; Testing)</span>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+          <button type="button" class="btn-secondary btn-switch-test-plan" data-plan="free_trial" style="padding: 6px; font-size: 0.72rem; text-align: center; border-color: rgba(16,185,129,0.4); color: var(--profit-green);">
+            ✓ 7-Day Active Trial (Unlocked)
+          </button>
+          <button type="button" class="btn-secondary btn-switch-test-plan" data-plan="expired_trial" style="padding: 6px; font-size: 0.72rem; text-align: center; border-color: rgba(239,68,68,0.4); color: var(--loss-red);">
+            🔒 Expired Trial (Day 8+ Locked)
+          </button>
+          <button type="button" class="btn-secondary btn-switch-test-plan" data-plan="pro_monthly" style="padding: 6px; font-size: 0.72rem; text-align: center;">
+            Monthly Pro (₹499)
+          </button>
+          <button type="button" class="btn-secondary btn-switch-test-plan" data-plan="pro_annual" style="padding: 6px; font-size: 0.72rem; text-align: center; border-color: rgba(37,99,235,0.4);">
+            Annual VIP (₹3,999)
+          </button>
+          <button type="button" class="btn-secondary btn-switch-test-plan" data-plan="app_standalone" style="padding: 6px; font-size: 0.72rem; text-align: center; grid-column: span 2;">
+            App APK Only (₹1,499 Lifetime)
+          </button>
+        </div>
+      </div>
+
+      <button type="button" id="btnDismissUserAccountModal" class="btn-secondary" style="width: 100%; padding: 8px; font-size: 0.80rem;">
+        Close
       </button>
     </div>
   </div>
