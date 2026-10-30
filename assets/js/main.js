@@ -1427,7 +1427,7 @@ function initAuth() {
   }
 
   // Active view state for authenticated user: 'main' | 'watchlist' | 'smc' | 'news'
-  let currentAuthTab = 'main';
+  let currentAuthTab = window.__defaultAuthTab || (window.location.hash.includes('watchlist') ? 'watchlist' : (window.location.hash.includes('smc') ? 'smc' : (window.location.hash.includes('news') ? 'news' : 'main')));
   window.currentAuthTab = currentAuthTab;
 
   window.switchAuthTab = function(tab) {
@@ -2977,6 +2977,20 @@ function initWatchlistModule() {
     const notes = getStockNotes();
     const smcList = getSmcSymbols();
 
+    // Feature Gating: Lock SMC Radar column on Trial Expired (Day 8+)
+    const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
+      ? window.tradeNitiSubscription.check()
+      : { isProWeb: false };
+    const isSmcLocked = !sub.isProWeb;
+
+    // Update SMC column header with Lock badge if locked
+    const smcHeader = document.querySelector('.wl-table th.col-smc');
+    if (smcHeader) {
+      smcHeader.innerHTML = isSmcLocked
+        ? 'SMC RADAR <span class="nav-smc-lock-badge" style="font-size:0.62rem; font-weight:800; background:rgba(239,68,68,0.15); color:#EF4444; border:1px solid rgba(239,68,68,0.3); padding:1px 5px; border-radius:4px; margin-left:4px; vertical-align:middle;">🔒 PRO</span>'
+        : 'SMC RADAR';
+    }
+
     if (active.symbols.length === 0) {
       if (tableBody) tableBody.innerHTML = '';
       if (emptyState) emptyState.style.display = 'block';
@@ -3037,11 +3051,17 @@ function initWatchlistModule() {
               </span>
             </td>
 
-            <!-- Col 4: SMC Radar Button -->
+            <!-- Col 4: SMC Radar Button (Gated for Trial Expired) -->
             <td class="wl-smc-cell">
-              <button type="button" class="wl-smc-btn ${isSmc ? 'tracked' : 'untracked'}" data-action="smc" data-symbol="${stock.symbol}" title="${isSmc ? 'Tracked in SMC Radar (Click to Untrack)' : 'Add to SMC Radar'}">
-                ${isSmc ? '✓ SMC' : '+ SMC'}
-              </button>
+              ${isSmcLocked ? `
+                <button type="button" class="wl-smc-btn locked" data-action="smc-locked" data-symbol="${stock.symbol}" title="Stock Monitoring Center (SMC) Radar is a Pro Feature. Available in Monthly Pro & Annual VIP.">
+                  🔒 PRO
+                </button>
+              ` : `
+                <button type="button" class="wl-smc-btn ${isSmc ? 'tracked' : 'untracked'}" data-action="smc" data-symbol="${stock.symbol}" title="${isSmc ? 'Tracked in SMC Radar (Click to Untrack)' : 'Add to SMC Radar'}">
+                  ${isSmc ? '✓ SMC' : '+ SMC'}
+                </button>
+              `}
             </td>
 
             <!-- Col 5: Note Edit Button -->
@@ -3078,6 +3098,13 @@ function initWatchlistModule() {
             if (window.openStockDetailModal) window.openStockDetailModal(symbol);
           } else if (action === 'chart') {
             window.open(`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`, '_blank');
+          } else if (action === 'smc-locked') {
+            if (typeof window.openFeatureGateModal === 'function') {
+              window.openFeatureGateModal('smc');
+            }
+            if (typeof window.showToast === 'function') {
+              window.showToast('Stock Monitoring Center (SMC) Radar is available on Pro Monthly (\u20B9499) and Annual VIP.', '🔒');
+            }
           } else if (action === 'smc') {
             toggleSmc(symbol);
           } else if (action === 'note') {
@@ -3094,6 +3121,9 @@ function initWatchlistModule() {
     renderGroupsBar();
     renderActiveTable();
   };
+  if (currentAuthTab === 'watchlist') {
+    window.renderActiveWatchlist();
+  }
 
   function escapeHtml(str) {
     if (!str) return '';
@@ -3102,6 +3132,19 @@ function initWatchlistModule() {
 
   // 3. SMC Toggle
   function toggleSmc(symbol) {
+    const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
+      ? window.tradeNitiSubscription.check()
+      : { isProWeb: false };
+    if (!sub.isProWeb) {
+      if (typeof window.openFeatureGateModal === 'function') {
+        window.openFeatureGateModal('smc');
+      }
+      if (typeof window.showToast === 'function') {
+        window.showToast('Stock Monitoring Center (SMC) Radar is available on Pro Monthly (\u20B9499) and Annual VIP.', '🔒');
+      }
+      return;
+    }
+
     const list = getSmcSymbols();
     const idx = list.indexOf(symbol);
     if (idx >= 0) {
