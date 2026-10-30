@@ -7555,13 +7555,12 @@ function initStockAnalysisCenterModule() {
     // Default to Unified View on open
     setActiveTab('all');
 
-    // Feature Gating: Lock Vital Technicals & AI Report on Expired Trial (for all stocks except NIFTY 50 Benchmark)
+    // Feature Gating: Lock Vital Technicals & AI Report on Expired Trial (for all stocks including NIFTY 50 Benchmark)
     const sub = (window.tradeNitiSubscription && window.tradeNitiSubscription.check)
       ? window.tradeNitiSubscription.check()
       : { isProWeb: false };
 
-    const isNifty50 = (sym === 'NIFTY 50' || sym === 'NIFTY50' || sym === '^NSEI');
-    const isLocked = !sub.isProWeb && !isNifty50;
+    const isLocked = !sub.isProWeb;
 
     const vitalsOverlay = document.getElementById('sacVitalsLockOverlay');
     const aiOverlay = document.getElementById('sacAiLockOverlay');
