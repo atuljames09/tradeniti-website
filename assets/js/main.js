@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Trade Niti - Official Interactive Website JavaScript
  * Developed for AK Smart IT Solutions Pvt Ltd
  */
@@ -611,7 +611,7 @@ function initStockScreener() {
   }
 
   fetchLiveQuotesForLandingScreener();
-  setInterval(fetchLiveQuotesForLandingScreener, 45000);
+  setInterval(fetchLiveQuotesForLandingScreener, 30000);
 }
 
 function renderScreenerTable() {
@@ -2053,7 +2053,8 @@ function initMainPageDashboard() {
     const symbols = MARKET_STOCKS_MASTER.map(s => s.symbol);
     const fetches = symbols.map(async (sym) => {
       try {
-        const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/quote?symbol=' + encodeURIComponent(sym));
+        const qSym = (sym === 'TATAMOTORS') ? 'TMPV' : sym;
+        const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/quote?symbol=' + encodeURIComponent(qSym));
         if (!res.ok) return;
         const data = await res.json();
         if (data && data.priceInfo && data.priceInfo.lastPrice) {
@@ -4994,7 +4995,8 @@ function initSidebarDrawer() {
 
   if (closeScreenerBtn) {
     closeScreenerBtn.addEventListener('click', () => {
-      if (screenerModal) screenerModal.classList.remove('active');
+        screenerModal.classList.remove('active');
+        if (typeof window.stopScreenerAutoRefresh === 'function') window.stopScreenerAutoRefresh();
     });
   }
 
@@ -5143,51 +5145,171 @@ function initScreenerModalModule() {
     });
   }
 
-  // 4. Live Quote Sync & Refresh Handler (matches Kotlin StockScreenerViewModel.loadStocks(forceRefresh))
+  // 4. Live Quote Sync & Auto-Refresh Engine (matches Kotlin StockScreenerViewModel.loadStocks)
   let isScreenerScanning = false;
   let screenerLastSyncTime = null;
+  let screenerSecondsAgo = 0;
+  let screenerAutoRefreshTimer = null;
+  let screenerSecondsTicker = null;
+  let screenerRotationIndex = 0;
 
-  async function syncLiveScreenerModalQuotes(forceFull = false) {
+  function updateScreenerTimestampUI() {
+    if (!subtitleCount) return;
+    const total = (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') ? TRADE_NITI_MASTER_STOCKS.length : 359;
+    if (!screenerLastSyncTime) {
+      subtitleCount.innerHTML = `${total} NSE Stocks &bull; <span style="color:var(--text-muted);">Connecting Live NSE Proxy...</span>`;
+      return;
+    }
+    const timeStr = screenerLastSyncTime.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
+    const agoStr = screenerSecondsAgo < 5 ? 'Just now' : `${screenerSecondsAgo}s ago`;
+    subtitleCount.innerHTML = `${total} NSE Stocks &bull; <span style="display:inline-flex; align-items:center; gap:4px; font-weight:600; color:var(--text-primary);"><span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px rgba(16,185,129,0.7);"></span>Live Synced ${agoStr} (${timeStr})</span> &bull; <span style="color:var(--brand-blue); font-weight:700;">Auto-refresh 30s</span>`;
+  }
+
+  function startScreenerTickers() {
+    stopScreenerTickers();
+    // 1-second elapsed counter ticker
+    screenerSecondsTicker = setInterval(() => {
+      if (modal && modal.classList.contains('active')) {
+        screenerSecondsAgo++;
+        updateScreenerTimestampUI();
+      }
+    }, 1000);
+
+    // 30-second continuous background auto-sync
+    screenerAutoRefreshTimer = setInterval(() => {
+      if (modal && modal.classList.contains('active') && !isScreenerScanning) {
+        syncLiveScreenerModalQuotes(false, true);
+      }
+    }, 30000);
+  }
+
+  function stopScreenerTickers() {
+    if (screenerSecondsTicker) {
+      clearInterval(screenerSecondsTicker);
+      screenerSecondsTicker = null;
+    }
+    if (screenerAutoRefreshTimer) {
+      clearInterval(screenerAutoRefreshTimer);
+      screenerAutoRefreshTimer = null;
+    }
+  }
+
+  window.startScreenerAutoRefresh = startScreenerTickers;
+  window.stopScreenerAutoRefresh = stopScreenerTickers;
+
+  async function syncLiveScreenerModalQuotes(forceFull = false, isAuto = false) {
     if (isScreenerScanning) return;
     isScreenerScanning = true;
 
-    if (refreshIcon) refreshIcon.style.animation = 'spin 0.8s linear infinite';
-    if (progressBanner) progressBanner.style.display = 'block';
-    if (progressBar) progressBar.style.width = '0%';
-
-    // Priority targets: prioritize active search or category filtered stocks
-    let targetsToScan = [...TRADE_NITI_MASTER_STOCKS];
-    if (screenerModalSearchQuery || screenerActiveFilter !== 'ALL') {
-      const activeFiltered = targetsToScan.filter(s => {
-        let matchSearch = true;
-        if (screenerModalSearchQuery) {
-          matchSearch = (s.symbol || '').toLowerCase().includes(screenerModalSearchQuery) ||
-                        (s.name || '').toLowerCase().includes(screenerModalSearchQuery) ||
-                        (s.sector || '').toLowerCase().includes(screenerModalSearchQuery);
-        }
-        return matchSearch;
-      });
-      const remaining = targetsToScan.filter(s => !activeFiltered.includes(s));
-      targetsToScan = [...activeFiltered, ...remaining];
+    if (refreshIcon) refreshIcon.style.animation = isAuto ? 'spin 1.2s linear infinite' : 'spin 0.8s linear infinite';
+    if (!isAuto && progressBanner) {
+      progressBanner.style.display = 'block';
+      if (progressBar) progressBar.style.width = '0%';
     }
 
-    // Limit batch size to keep network responsive (60 stocks default, 120 on manual refresh)
-    const scanLimit = forceFull ? Math.min(120, targetsToScan.length) : Math.min(60, targetsToScan.length);
-    const scanBatch = targetsToScan.slice(0, scanLimit);
-    const total = scanBatch.length;
+    // 1. Prioritize active view (stocks matched by search & category filter, sorted by current column)
+    let sortedList = [...TRADE_NITI_MASTER_STOCKS];
+    if (screenerModalSearchQuery) {
+      sortedList = sortedList.filter(s =>
+        (s.symbol || '').toLowerCase().includes(screenerModalSearchQuery) ||
+        (s.name || '').toLowerCase().includes(screenerModalSearchQuery) ||
+        (s.sector || '').toLowerCase().includes(screenerModalSearchQuery)
+      );
+    }
+    if (screenerActiveFilter === 'BULLISH') {
+      sortedList = sortedList.filter(s => (s.analysisPct || s.confluence) >= 70);
+    } else if (screenerActiveFilter === 'NEUTRAL') {
+      sortedList = sortedList.filter(s => {
+        const a = s.analysisPct || s.confluence;
+        return a >= 50 && a < 70;
+      });
+    } else if (screenerActiveFilter === 'BEARISH') {
+      sortedList = sortedList.filter(s => (s.analysisPct || s.confluence) < 50);
+    } else if (screenerActiveFilter === 'GAINERS') {
+      sortedList = sortedList.filter(s => (s.changePct || 0) > 0);
+    } else if (screenerActiveFilter === 'LOSERS') {
+      sortedList = sortedList.filter(s => (s.changePct || 0) < 0);
+    }
 
-    if (progressText) progressText.textContent = `Connecting Live NSE Proxy (0/${total})...`;
-    if (progressPercent) progressPercent.textContent = `0% (0/${total})`;
+    // Column sorting comparator
+    sortedList.sort((a, b) => {
+      let vA, vB;
+      switch (screenerModalSortColumn) {
+        case 'NAME':
+          vA = a.symbol || '';
+          vB = b.symbol || '';
+          return screenerModalSortAsc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+        case 'PRICE':
+        case 'LTP':
+          vA = a.price || a.ltp || 0;
+          vB = b.price || b.ltp || 0;
+          break;
+        case 'CHANGE':
+          vA = a.changePct || 0;
+          vB = b.changePct || 0;
+          break;
+        case 'HIGH_52':
+          vA = a.high52 || 0;
+          vB = b.high52 || 0;
+          break;
+        case 'LOW_52':
+          vA = a.low52 || 0;
+          vB = b.low52 || 0;
+          break;
+        case 'ANALYSIS_PCT':
+        default:
+          vA = a.analysisPct || a.confluence || 0;
+          vB = b.analysisPct || b.confluence || 0;
+          break;
+      }
+      return screenerModalSortAsc ? (vA - vB) : (vB - vA);
+    });
+
+    let scanBatch = [];
+    if (forceFull) {
+      // Manual refresh: scan 120 stocks
+      const primary = sortedList.slice(0, 120);
+      const remaining = TRADE_NITI_MASTER_STOCKS.filter(s => !primary.some(p => p.symbol === s.symbol));
+      scanBatch = [...primary, ...remaining].slice(0, Math.min(120, TRADE_NITI_MASTER_STOCKS.length));
+    } else {
+      // Auto-refresh: scan top 30 visible stocks + rotate 30 stocks across the 359 catalog
+      const visibleBatch = sortedList.slice(0, 30);
+      screenerRotationIndex = (screenerRotationIndex + 30) % TRADE_NITI_MASTER_STOCKS.length;
+      const rotatingBatch = TRADE_NITI_MASTER_STOCKS.slice(screenerRotationIndex, screenerRotationIndex + 30);
+
+      const seen = new Set();
+      visibleBatch.forEach(s => {
+        if (!seen.has(s.symbol)) {
+          seen.add(s.symbol);
+          scanBatch.push(s);
+        }
+      });
+      rotatingBatch.forEach(s => {
+        if (!seen.has(s.symbol)) {
+          seen.add(s.symbol);
+          scanBatch.push(s);
+        }
+      });
+    }
+
+    const total = scanBatch.length;
+    if (!isAuto) {
+      if (progressText) progressText.textContent = `Connecting Live NSE Proxy (0/${total})...`;
+      if (progressPercent) progressPercent.textContent = `0% (0/${total})`;
+    }
 
     let completed = 0;
-    const CHUNK_SIZE = 6;
+    const CHUNK_SIZE = 10;
 
     for (let i = 0; i < scanBatch.length; i += CHUNK_SIZE) {
       const chunk = scanBatch.slice(i, i + CHUNK_SIZE);
       await Promise.allSettled(chunk.map(async (stock) => {
         try {
           const qSym = (stock.symbol === 'TATAMOTORS') ? 'TMPV' : stock.symbol;
-          const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/quote?symbol=' + encodeURIComponent(qSym));
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 3500);
+          const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/quote?symbol=' + encodeURIComponent(qSym), { signal: controller.signal });
+          clearTimeout(timer);
           if (!res.ok) return;
           const data = await res.json();
           if (data && data.priceInfo && data.priceInfo.lastPrice) {
@@ -5213,45 +5335,83 @@ function initScreenerModalModule() {
               stock.confluence = Math.max(25, Math.min(48, (stock.confluence || 50) - 4));
               stock.analysisPct = stock.confluence;
             }
+
+            // Sync with landing page SCREENER_STOCKS and MARKET_STOCKS_MASTER
+            if (typeof SCREENER_STOCKS !== 'undefined') {
+              const sc = SCREENER_STOCKS.find(s => s.symbol === stock.symbol);
+              if (sc) {
+                sc.price = ltp;
+                sc.change = pchg;
+                if (stock.high52) sc.high52 = stock.high52;
+                if (stock.low52) sc.low52 = stock.low52;
+                if (stock.confluence) sc.analysisPct = stock.confluence;
+              }
+            }
+            if (typeof MARKET_STOCKS_MASTER !== 'undefined') {
+              const mm = MARKET_STOCKS_MASTER.find(s => s.symbol === stock.symbol);
+              if (mm) {
+                mm.price = ltp;
+                mm.change = chg;
+                mm.changePct = pchg;
+              }
+            }
           }
         } catch (_) {}
         finally {
           completed++;
-          const pct = Math.round((completed / total) * 100);
-          if (progressBar) progressBar.style.width = `${pct}%`;
-          if (progressPercent) progressPercent.textContent = `${pct}% (${completed}/${total})`;
-          if (progressText) progressText.textContent = `Syncing live ticks (${stock.symbol})...`;
+          if (!isAuto) {
+            const pct = Math.round((completed / total) * 100);
+            if (progressBar) progressBar.style.width = `${pct}%`;
+            if (progressPercent) progressPercent.textContent = `${pct}% (${completed}/${total})`;
+            if (progressText) progressText.textContent = `Syncing live ticks (${stock.symbol})...`;
+          }
         }
       }));
 
-      // Incremental live re-render so user sees rows dynamically update
-      renderScreenerModalTable();
+      // Incremental live re-render preserving scroll position
+      renderScreenerModalTable(true);
     }
 
     isScreenerScanning = false;
     screenerLastSyncTime = new Date();
-    const timeStr = screenerLastSyncTime.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
+    screenerSecondsAgo = 0;
 
     if (refreshIcon) refreshIcon.style.animation = '';
-    if (progressText) progressText.textContent = `Sync Complete: ${completed} stocks updated!`;
-    if (subtitleCount) subtitleCount.innerHTML = `${TRADE_NITI_MASTER_STOCKS.length} NSE Stocks &bull; Live Synced at ${timeStr}`;
+    updateScreenerTimestampUI();
 
-    setTimeout(() => {
-      if (progressBanner) progressBanner.style.display = 'none';
-    }, 700);
+    if (!isAuto) {
+      if (progressText) progressText.textContent = `Sync Complete: ${completed} stocks updated!`;
+      setTimeout(() => {
+        if (progressBanner) progressBanner.style.display = 'none';
+      }, 700);
 
-    if (typeof showToast === 'function') {
-      showToast(`Market Screener: ${completed} live NSE quotes synced!`, '\uD83D\uDCCA');
+      if (typeof showToast === 'function') {
+        showToast(`Market Screener: ${completed} live NSE quotes synced!`, '\uD83D\uDCCA');
+      }
     }
   }
 
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
-      syncLiveScreenerModalQuotes(true);
+      syncLiveScreenerModalQuotes(true, false);
+      startScreenerTickers();
     });
   }
 
-
+  // Hook close button and backdrop click to stop tickers
+  const closeScreenerBtnLocal = document.getElementById('closeScreenerModalBtn');
+  if (closeScreenerBtnLocal) {
+    closeScreenerBtnLocal.addEventListener('click', () => {
+      stopScreenerTickers();
+    });
+  }
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        stopScreenerTickers();
+      }
+    });
+  }
   // 5. Update Chip Counts
   function updateChipCounts() {
     const total = TRADE_NITI_MASTER_STOCKS.length;
@@ -5268,15 +5428,18 @@ function initScreenerModalModule() {
     const chipBearish = document.getElementById('chipScreenerBearish');
 
     if (chipAll) chipAll.innerHTML = `All (${total})`;
-    if (chipBullish) chipBullish.innerHTML = `🟢 Bullish &ge;70% (${bullish})`;
-    if (chipNeutral) chipNeutral.innerHTML = `🟡 Neutral (${neutral})`;
-    if (chipBearish) chipBearish.innerHTML = `🔴 Bearish (${bearish})`;
-    if (subtitleCount) subtitleCount.innerHTML = `${total} NSE Stocks Listed &bull; Technical Confluence %`;
+    if (chipBullish) chipBullish.innerHTML = `&#128994; Bullish &ge;70% (${bullish})`;
+    if (chipNeutral) chipNeutral.innerHTML = `&#128993; Neutral (${neutral})`;
+    if (chipBearish) chipBearish.innerHTML = `&#128308; Bearish (${bearish})`;
+    // Subtitle timestamp is maintained exclusively by updateScreenerTimestampUI()
   }
 
   // 6. Render Table Rows
-  window.renderScreenerModalTable = function() {
+  window.renderScreenerModalTable = function(keepScroll = false) {
     if (!tableBody) return;
+    const wrapper = document.getElementById('screenerTableWrapper');
+    const prevScrollTop = wrapper ? wrapper.scrollTop : 0;
+    const prevScrollLeft = wrapper ? wrapper.scrollLeft : 0;
     updateChipCounts();
     updateSortHeaderArrows();
 
@@ -5446,6 +5609,10 @@ function initScreenerModalModule() {
     }
 
     tableBody.innerHTML = rowsHtml;
+    if (wrapper && keepScroll) {
+      wrapper.scrollTop = prevScrollTop;
+      wrapper.scrollLeft = prevScrollLeft;
+    }
 
     // Attach row click listeners (matches onStockClick(stock.symbol))
     tableBody.querySelectorAll('tr[data-stock-symbol]').forEach(row => {
@@ -5461,15 +5628,17 @@ function initScreenerModalModule() {
   };
 
   // Open Screener Modal function
+  // Open Screener Modal function
   window.openScreenerModal = function() {
     renderScreenerModalTable();
     if (modal) modal.classList.add('active');
-    // Auto-sync live quotes if never synced or older than 2 minutes
-    if (!screenerLastSyncTime || (Date.now() - screenerLastSyncTime.getTime() > 120000)) {
-      syncLiveScreenerModalQuotes(false);
+    startScreenerTickers();
+    updateScreenerTimestampUI();
+    // Auto-sync live quotes immediately if never synced or older than 30 seconds
+    if (!screenerLastSyncTime || (Date.now() - screenerLastSyncTime.getTime() > 30000)) {
+      syncLiveScreenerModalQuotes(false, false);
     }
   };
-
   // Initial render
   updateChipCounts();
   renderScreenerModalTable();
