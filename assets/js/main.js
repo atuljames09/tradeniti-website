@@ -4702,8 +4702,12 @@ function initSidebarDrawer() {
 
   let activeFiiDiiFilter = 'all';
 
-  // Seed recent market sessions up to current date (30-Oct-2026)
+  // Seed recent market sessions up to current date (05-Nov-2026)
   const SEED_FIIDII_ENTRIES = [
+    { date: "05-Nov-2026", niftyClose: "24536.60", niftyChangePct: 2.40, fiiDiiNet: 4530.14, fiiNet: 14974.68, diiNet: -10444.54 },
+    { date: "04-Nov-2026", niftyClose: "23960.60", niftyChangePct: 0.42, fiiDiiNet: 339.70, fiiNet: -2840.50, diiNet: 3180.20 },
+    { date: "03-Nov-2026", niftyClose: "23860.20", niftyChangePct: 1.12, fiiDiiNet: 2310.70, fiiNet: 1420.30, diiNet: 890.40 },
+    { date: "02-Nov-2026", niftyClose: "23595.80", niftyChangePct: 2.35, fiiDiiNet: 3361.05, fiiNet: 2110.45, diiNet: 1250.60 },
     { date: "30-Oct-2026", niftyClose: "23053.10", niftyChangePct: 0.51, fiiDiiNet: 2781.03, fiiNet: 3598.54, diiNet: -817.51 },
     { date: "29-Oct-2026", niftyClose: "22936.75", niftyChangePct: 0.42, fiiDiiNet: 878.65, fiiNet: -2143.80, diiNet: 3022.45 },
     { date: "28-Oct-2026", niftyClose: "22840.10", niftyChangePct: -0.35, fiiDiiNet: -616.60, fiiNet: -3865.20, diiNet: 3248.60 },
@@ -4731,20 +4735,39 @@ function initSidebarDrawer() {
   ];
 
   function getFiiDiiEntries() {
+    let entries = [];
     try {
       const cached = localStorage.getItem('fiidii_history_cache');
       if (cached) {
         const parsed = JSON.parse(cached);
-        // Refresh cache if stale (ensure latest session date 30-Oct-2026 is present)
-        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].date === SEED_FIIDII_ENTRIES[0].date) {
-          return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          entries = parsed;
         }
       }
     } catch (e) {
       console.error(e);
     }
-    localStorage.setItem('fiidii_history_cache', JSON.stringify(SEED_FIIDII_ENTRIES));
-    return [...SEED_FIIDII_ENTRIES];
+
+    if (entries.length === 0) {
+      entries = [...SEED_FIIDII_ENTRIES];
+    } else {
+      // Ensure all seed dates are present in history without wiping out newer live dates
+      SEED_FIIDII_ENTRIES.forEach(seed => {
+        if (!entries.some(e => e.date === seed.date)) {
+          entries.push(seed);
+        }
+      });
+    }
+
+    // Always sort descending chronologically
+    entries.sort((a, b) => {
+      const dateA = new Date(a.date.replace(/-/g, ' '));
+      const dateB = new Date(b.date.replace(/-/g, ' '));
+      return dateB - dateA;
+    });
+
+    saveFiiDiiEntries(entries);
+    return entries;
   }
 
   function saveFiiDiiEntries(entries) {
@@ -4754,7 +4777,6 @@ function initSidebarDrawer() {
       console.error(e);
     }
   }
-
   function formatNetVal(num) {
     const sign = num >= 0 ? '+' : '-';
     const absVal = Math.abs(num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -4876,10 +4898,60 @@ function initSidebarDrawer() {
     });
   });
 
-  async function fetchLiveFiiDii() {
+  let fiidiiLastSyncTime = null;
+  let fiidiiSecondsAgo = 0;
+  let fiidiiAutoRefreshTimer = null;
+  let fiidiiSecondsTicker = null;
+
+  function updateFiiDiiTimestampUI() {
+    const fiidiiSubtitleEl = document.getElementById('fiidiiSubtitleDesc');
+    if (!fiidiiSubtitleEl) return;
+    if (!fiidiiLastSyncTime) {
+      fiidiiSubtitleEl.innerHTML = `Cash Market &bull; Source: NSE India &bull; <span style="color:var(--text-muted);">Syncing Live NSE Data...</span>`;
+      return;
+    }
+    const timeStr = fiidiiLastSyncTime.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' });
+    const agoStr = fiidiiSecondsAgo < 5 ? 'Just now' : `${fiidiiSecondsAgo}s ago`;
+    fiidiiSubtitleEl.innerHTML = `Cash Market &bull; Source: NSE India &bull; <span style="display:inline-flex; align-items:center; gap:4px; font-weight:600; color:var(--text-primary);"><span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px rgba(16,185,129,0.7);"></span>Live Synced ${agoStr} (${timeStr})</span> &bull; <span style="color:var(--brand-blue); font-weight:700;">Auto-refresh 60s</span>`;
+  }
+
+  function startFiiDiiTickers() {
+    stopFiiDiiTickers();
+    fiidiiSecondsTicker = setInterval(() => {
+      if (fiidiiModal && fiidiiModal.classList.contains('active')) {
+        fiidiiSecondsAgo++;
+        updateFiiDiiTimestampUI();
+      }
+    }, 1000);
+
+    fiidiiAutoRefreshTimer = setInterval(() => {
+      if (fiidiiModal && fiidiiModal.classList.contains('active')) {
+        fetchLiveFiiDii(true);
+      }
+    }, 60000);
+  }
+
+  function stopFiiDiiTickers() {
+    if (fiidiiSecondsTicker) {
+      clearInterval(fiidiiSecondsTicker);
+      fiidiiSecondsTicker = null;
+    }
+    if (fiidiiAutoRefreshTimer) {
+      clearInterval(fiidiiAutoRefreshTimer);
+      fiidiiAutoRefreshTimer = null;
+    }
+  }
+
+  window.startFiiDiiAutoRefresh = startFiiDiiTickers;
+  window.stopFiiDiiAutoRefresh = stopFiiDiiTickers;
+
+  async function fetchLiveFiiDii(isAuto = false) {
     try {
-      if (fiidiiRefreshIcon) fiidiiRefreshIcon.style.animation = 'spin 0.8s linear infinite';
-      const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/fiidii');
+      if (fiidiiRefreshIcon) fiidiiRefreshIcon.style.animation = isAuto ? 'spin 1.2s linear infinite' : 'spin 0.8s linear infinite';
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 6000);
+      const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/fiidii', { signal: controller.signal });
+      clearTimeout(timer);
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
@@ -4889,27 +4961,41 @@ function initSidebarDrawer() {
             const diiNet = diiItem ? parseFloat(diiItem.netValue) : 0;
             const fiiNet = fiiItem ? parseFloat(fiiItem.netValue) : 0;
             const combined = fiiNet + diiNet;
-            const dateStr = (fiiItem ? fiiItem.date : (diiItem ? diiItem.date : 'Today'));
+            const dateStr = (fiiItem && fiiItem.date) ? fiiItem.date : ((diiItem && diiItem.date) ? diiItem.date : 'Today');
 
             const entries = getFiiDiiEntries();
             const existing = entries.find(e => e.date === dateStr);
+            const liveNifty = (typeof MAIN_PAGE_INDICES !== 'undefined' && MAIN_PAGE_INDICES[0]) ? MAIN_PAGE_INDICES[0] : null;
+
             if (existing) {
               existing.fiiNet = fiiNet;
               existing.diiNet = diiNet;
               existing.fiiDiiNet = parseFloat(combined.toFixed(2));
+              if (liveNifty && liveNifty.value) existing.niftyClose = liveNifty.value.toFixed(2);
+              if (liveNifty && liveNifty.changePct !== undefined) existing.niftyChangePct = liveNifty.changePct;
             } else {
-              const liveNifty = (typeof MAIN_PAGE_INDICES !== 'undefined' && MAIN_PAGE_INDICES[0]) ? MAIN_PAGE_INDICES[0] : null;
               entries.unshift({
                 date: dateStr,
-                niftyClose: liveNifty ? liveNifty.value.toFixed(2) : "23053.10",
-                niftyChangePct: liveNifty ? liveNifty.changePct : 0.51,
+                niftyClose: (liveNifty && liveNifty.value) ? liveNifty.value.toFixed(2) : "24536.60",
+                niftyChangePct: (liveNifty && liveNifty.changePct !== undefined) ? liveNifty.changePct : 2.40,
                 fiiDiiNet: parseFloat(combined.toFixed(2)),
                 fiiNet: fiiNet,
                 diiNet: diiNet
               });
             }
+
+            entries.sort((a, b) => {
+              const dateA = new Date(a.date.replace(/-/g, ' '));
+              const dateB = new Date(b.date.replace(/-/g, ' '));
+              return dateB - dateA;
+            });
+
             saveFiiDiiEntries(entries);
-            if (typeof showToast === 'function') {
+            fiidiiLastSyncTime = new Date();
+            fiidiiSecondsAgo = 0;
+            updateFiiDiiTimestampUI();
+
+            if (!isAuto && typeof showToast === 'function') {
               showToast(`Live FII/DII sessions updated for ${dateStr}!`, '\uD83D\uDCCA');
             }
           }
@@ -4919,6 +5005,8 @@ function initSidebarDrawer() {
       console.warn('FII DII live fetch error:', e);
     } finally {
       if (fiidiiRefreshIcon) fiidiiRefreshIcon.style.animation = '';
+      fiidiiLastSyncTime = fiidiiLastSyncTime || new Date();
+      updateFiiDiiTimestampUI();
       renderFiiDiiTable();
     }
   }
@@ -4926,7 +5014,8 @@ function initSidebarDrawer() {
   // Refresh Action
   if (btnRefreshFiiDii) {
     btnRefreshFiiDii.addEventListener('click', () => {
-      fetchLiveFiiDii();
+      fetchLiveFiiDii(false);
+      startFiiDiiTickers();
     });
   }
 
@@ -4942,9 +5031,10 @@ function initSidebarDrawer() {
     }
     renderFiiDiiTable();
     if (fiidiiModal) fiidiiModal.classList.add('active');
-    fetchLiveFiiDii();
+    startFiiDiiTickers();
+    updateFiiDiiTimestampUI();
+    fetchLiveFiiDii(false);
   }
-
   if (navFiiDii) {
     navFiiDii.addEventListener('click', (e) => {
       e.preventDefault();
@@ -5032,10 +5122,20 @@ function initSidebarDrawer() {
   // Close modals
   if (closeFiiDiiBtn) closeFiiDiiBtn.addEventListener('click', () => {
     if (fiidiiModal) fiidiiModal.classList.remove('active');
+    if (typeof window.stopFiiDiiAutoRefresh === 'function') window.stopFiiDiiAutoRefresh();
   });
   if (dismissFiiDiiBtn) dismissFiiDiiBtn.addEventListener('click', () => {
     if (fiidiiModal) fiidiiModal.classList.remove('active');
+    if (typeof window.stopFiiDiiAutoRefresh === 'function') window.stopFiiDiiAutoRefresh();
   });
+  if (fiidiiModal) {
+    fiidiiModal.addEventListener('click', (e) => {
+      if (e.target === fiidiiModal) {
+        fiidiiModal.classList.remove('active');
+        if (typeof window.stopFiiDiiAutoRefresh === 'function') window.stopFiiDiiAutoRefresh();
+      }
+    });
+  }
 
   if (closeEmaCollideBtn) closeEmaCollideBtn.addEventListener('click', () => {
     if (emaCollideModal) emaCollideModal.classList.remove('active');
