@@ -5745,7 +5745,7 @@ function initScreenerModalModule() {
     updateScreenerTimestampUI();
     // Auto-sync live quotes immediately if never synced or older than 30 seconds
     if (!screenerLastSyncTime || (Date.now() - screenerLastSyncTime.getTime() > 30000)) {
-      syncLiveScreenerModalQuotes(false, false);
+      syncLiveScreenerModalQuotes(true, false);
     }
   };
   // Initial render
