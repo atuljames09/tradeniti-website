@@ -546,6 +546,18 @@ let screenerSortCol = 'analysisPct';
 let screenerSortAsc = false;
 
 function initStockScreener() {
+  if (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined' && TRADE_NITI_MASTER_STOCKS.length > 0) {
+    SCREENER_STOCKS = TRADE_NITI_MASTER_STOCKS.map(s => ({
+      symbol: s.symbol,
+      name: s.name,
+      price: s.price || s.ltp || 1000,
+      change: s.changePct !== undefined ? s.changePct : (s.change || 0),
+      high52: s.high52 || 1200,
+      low52: s.low52 || 800,
+      analysisPct: s.analysisPct || s.confluence || 50,
+      sector: s.sector || 'NSE Equities'
+    }));
+  }
   const tabs = document.querySelectorAll('.screener-tab');
   const searchInput = document.getElementById('screenerSearch');
   const ths = document.querySelectorAll('.screener-table th[data-sort]');
@@ -5367,15 +5379,13 @@ function initScreenerModalModule() {
 
     let scanBatch = [];
     if (forceFull) {
-      // Manual refresh: scan 120 stocks
-      const primary = sortedList.slice(0, 120);
-      const remaining = TRADE_NITI_MASTER_STOCKS.filter(s => !primary.some(p => p.symbol === s.symbol));
-      scanBatch = [...primary, ...remaining].slice(0, Math.min(120, TRADE_NITI_MASTER_STOCKS.length));
+      // Full Scan: scan ALL 359 stocks in the catalog!
+      scanBatch = [...TRADE_NITI_MASTER_STOCKS];
     } else {
-      // Auto-refresh: scan top 30 visible stocks + rotate 30 stocks across the 359 catalog
-      const visibleBatch = sortedList.slice(0, 30);
-      screenerRotationIndex = (screenerRotationIndex + 30) % TRADE_NITI_MASTER_STOCKS.length;
-      const rotatingBatch = TRADE_NITI_MASTER_STOCKS.slice(screenerRotationIndex, screenerRotationIndex + 30);
+      // Auto-refresh: scan top 40 visible stocks + rotate 40 stocks across the 359 catalog
+      const visibleBatch = sortedList.slice(0, 40);
+      screenerRotationIndex = (screenerRotationIndex + 40) % TRADE_NITI_MASTER_STOCKS.length;
+      const rotatingBatch = TRADE_NITI_MASTER_STOCKS.slice(screenerRotationIndex, screenerRotationIndex + 40);
 
       const seen = new Set();
       visibleBatch.forEach(s => {
@@ -5399,8 +5409,7 @@ function initScreenerModalModule() {
     }
 
     let completed = 0;
-    const CHUNK_SIZE = 10;
-
+    const CHUNK_SIZE = 25; // 25 parallel requests per chunk for ultra-fast full 359 sync
     for (let i = 0; i < scanBatch.length; i += CHUNK_SIZE) {
       const chunk = scanBatch.slice(i, i + CHUNK_SIZE);
       await Promise.allSettled(chunk.map(async (stock) => {
