@@ -1350,7 +1350,7 @@
 
         <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 16px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
           <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-            <span>Displaying High-Liquidity Constituents &bull; Live NSE Ticks via Vercel Proxy</span>
+            <span>Displaying All 359 NSE Equities &bull; Live NSE Ticks via Vercel Proxy</span>
           </div>
           <button type="button" class="btn btn-primary" onclick="if (typeof openScreenerModal === 'function') openScreenerModal();" style="padding: 7px 16px; font-size: 0.82rem; font-weight: 750; display: inline-flex; align-items: center; gap: 7px; border-radius: var(--radius-sm); cursor: pointer;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
@@ -1463,7 +1463,7 @@
 
         <div style="margin-top: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 16px; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
           <div style="font-size: 0.82rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
-            <span>Displaying High-Liquidity Constituents &bull; Live NSE Ticks via Vercel Proxy</span>
+            <span>Displaying All 359 NSE Equities &bull; Live NSE Ticks via Vercel Proxy</span>
           </div>
           <button type="button" class="btn btn-primary" onclick="if (typeof openScreenerModal === 'function') openScreenerModal();" style="padding: 7px 16px; font-size: 0.82rem; font-weight: 750; display: inline-flex; align-items: center; gap: 7px; border-radius: var(--radius-sm); cursor: pointer;">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
@@ -2415,14 +2415,14 @@
           <button type="button" id="screenerSearchClearBtn" class="screener-search-clear" style="display: none;" title="Clear Search">&times;</button>
         </div>
 
-        <!-- 6 Quick Filter Chips matching Compose LazyRow -->
+                <!-- 6 Quick Filter Chips matching Compose LazyRow -->
         <div class="screener-chips-row">
           <button type="button" class="screener-chip active" data-screener-filter="ALL" id="chipScreenerAll">All (359)</button>
-          <button type="button" class="screener-chip" data-screener-filter="BULLISH" id="chipScreenerBullish">🟢 Bullish ≥70% (116)</button>
-          <button type="button" class="screener-chip" data-screener-filter="NEUTRAL" id="chipScreenerNeutral">🟡 Neutral (120)</button>
-          <button type="button" class="screener-chip" data-screener-filter="BEARISH" id="chipScreenerBearish">🔴 Bearish (123)</button>
-          <button type="button" class="screener-chip" data-screener-filter="GAINERS" id="chipScreenerGainers">▲ Gainers</button>
-          <button type="button" class="screener-chip" data-screener-filter="LOSERS" id="chipScreenerLosers">▼ Losers</button>
+          <button type="button" class="screener-chip" data-screener-filter="BULLISH" id="chipScreenerBullish">&#128994; Bullish &ge;70% (34)</button>
+          <button type="button" class="screener-chip" data-screener-filter="NEUTRAL" id="chipScreenerNeutral">&#128993; Neutral (64)</button>
+          <button type="button" class="screener-chip" data-screener-filter="BEARISH" id="chipScreenerBearish">&#128308; Bearish (261)</button>
+          <button type="button" class="screener-chip" data-screener-filter="GAINERS" id="chipScreenerGainers">&#9650; Gainers</button>
+          <button type="button" class="screener-chip" data-screener-filter="LOSERS" id="chipScreenerLosers">&#9660; Losers</button>
         </div>
       </div>
 
