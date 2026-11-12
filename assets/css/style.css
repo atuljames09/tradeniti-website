@@ -4429,6 +4429,43 @@ input[type="range"]::-webkit-slider-thumb:hover {
   border-color: var(--brand-blue);
 }
 
+.mtr-channel-pill {
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.mtr-channel-pill:hover {
+  border-color: var(--brand-blue);
+  color: var(--text-primary);
+}
+
+.mtr-channel-pill.active {
+  background: rgba(37, 99, 235, 0.18);
+  border-color: var(--brand-blue);
+  color: #60A5FA;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+#mtrModal .modal-dialog {
+  padding: 20px 22px;
+}
+
+#mtrModal .modal-header-icon {
+  margin-bottom: 8px;
+}
+
+#mtrModal .mtr-stock-card {
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+#mtrModal .mtr-target-box {
+  padding: 12px;
+}
+
 /* Legend Row */
 .mtr-legend-row {
   display: flex;
