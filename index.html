@@ -1979,6 +1979,16 @@
         </div>
 
         <div class="auth-form-group">
+          <label class="auth-label" for="regPhone">Mobile Number (for SMC SMS Alerts - Optional)</label>
+          <div class="auth-input-wrapper">
+            <span class="auth-input-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </span>
+            <input type="tel" id="regPhone" class="auth-input" placeholder="+91 98765 43210" autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="auth-form-group">
           <label class="auth-label" for="regPassword">Password</label>
           <div class="auth-input-wrapper">
             <span class="auth-input-icon">
@@ -2254,9 +2264,32 @@
           <span class="mtr-legend-chip neutral">40-59% Neutral</span>
           <span class="mtr-legend-chip caution">&lt;40% Caution</span>
         </div>
+
+        <!-- Off-Browser Alert Delivery Settings (Email / SMS from User Account) -->
+        <div id="mtrAlertDeliveryBox" style="margin-top: 12px; padding: 11px 12px; background: var(--surface-chip); border: 1px solid var(--border-subtle); border-radius: 10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; flex-wrap:wrap;">
+            <span style="font-size:0.72rem; font-weight:800; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.3px;">&#128276; Alert Intimation (Email / SMS)</span>
+            <span id="mtrDeliveryStatusBadge" style="font-size:0.65rem; font-weight:700; color:var(--brand-blue);">Account Linked</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:8px;" id="mtrChannelButtons">
+            <button type="button" class="btn-secondary mtr-channel-pill active" data-channel="email" style="padding:5px 6px; font-size:0.72rem; font-weight:700; border-radius:6px;">&#128231; Email</button>
+            <button type="button" class="btn-secondary mtr-channel-pill" data-channel="sms" style="padding:5px 6px; font-size:0.72rem; font-weight:700; border-radius:6px;">&#128241; SMS</button>
+            <button type="button" class="btn-secondary mtr-channel-pill" data-channel="both" style="padding:5px 6px; font-size:0.72rem; font-weight:700; border-radius:6px;">&#9889; Both</button>
+          </div>
+          <div style="font-size:0.73rem; color:var(--text-secondary); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; gap:6px;">
+            <span>Account Email: <strong id="mtrContactEmailSummary" style="color:var(--text-primary);">user@example.com</strong></span>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:0.72rem; color:var(--text-muted); white-space:nowrap;">Mobile:</span>
+            <input type="tel" id="mtrPhoneInput" placeholder="+91 9876543210 (for SMS alerts)" style="flex:1; padding:5px 8px; font-size:0.74rem; border-radius:6px; border:1px solid var(--border-subtle); background:var(--surface-card); color:var(--text-primary);">
+          </div>
+          <div id="mtrCloudHintText" style="margin-top:6px; font-size:0.68rem; color:var(--text-muted); line-height:1.35;">
+            Alerts trigger in-browser + sync to cloud backend for Email/SMS delivery even when browser is closed.
+          </div>
+        </div>
       </div>
 
-      <div class="modal-action-row" style="margin-top: 18px;">
+      <div class="modal-action-row" style="margin-top: 14px;">
         <button type="button" class="btn-secondary" id="btnDisableMtr" style="color:#EF4444;">Turn OFF MTR</button>
         <button type="button" class="btn-primary" id="btnSaveMtr">
           <span>Confirm &amp; Enable MTR</span>
@@ -2826,6 +2859,25 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           <span>Download Android App APK (23.1 MB)</span>
         </a>
+      </div>
+
+      <!-- SMC Background Alert Contact Details (Email & Mobile) -->
+      <div style="background: var(--surface-chip); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+        <div style="font-size: 0.72rem; font-weight: 800; color: var(--text-primary); text-transform: uppercase; margin-bottom: 8px;">
+          &#128276; SMC Alert Contact (Off-Browser Email / SMS)
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px;">
+          <input type="email" id="uamAlertEmail" placeholder="Alert Email" style="padding: 6px 8px; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary);">
+          <input type="tel" id="uamAlertPhone" placeholder="+91 Mobile Number" style="padding: 6px 8px; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary);">
+        </div>
+        <div style="display: flex; gap: 6px; align-items: center;">
+          <select id="uamAlertChannel" style="flex: 1; padding: 6px 8px; font-size: 0.75rem; border-radius: 6px; border: 1px solid var(--border-subtle); background: var(--surface-card); color: var(--text-primary);">
+            <option value="email">Notify via Email</option>
+            <option value="sms">Notify via SMS</option>
+            <option value="both">Notify via Both (Email + SMS)</option>
+          </select>
+          <button type="button" id="btnSaveAlertContact" class="btn-primary" style="padding: 6px 12px; font-size: 0.74rem; font-weight: 700; border-radius: 6px;">Save Contact</button>
+        </div>
       </div>
 
       <!-- Quick Plan Switcher for Testing all 4 Categorized Plans -->
@@ -4013,13 +4065,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-  <script src="./assets/js/firebase-config.js"></script>
+  <script src="./assets/js/firebase-config.js?v=359.5"></script>
 
   <!-- Razorpay Standard Checkout SDK -->
   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script src="./assets/js/subscription.js?v=359.4"></script>
+  <script src="./assets/js/subscription.js?v=359.5"></script>
 
   <!-- Main Application Script -->
-  <script src="./assets/js/main.js?v=359.4"></script>
+  <script src="./assets/js/main.js?v=359.5"></script>
 </body>
 </html>
