@@ -3482,7 +3482,7 @@ function initWatchlistModule() {
 /* ==========================================================================
    14. Stock Monitoring Center (SMC) Module
        (Mobile App Fidelity: Autonomous Surveillance, Confluence Score,
-        MTR Target Alerts, Live 30s Polling, Shared Notes & TradingView)
+        MTR ±3% Target Alerts, Live 30s NSE Polling, Shared Notes & TradingView)
    ========================================================================== */
 function initSmcModule() {
   const tableBody = document.getElementById('smcTableBody');
@@ -3495,6 +3495,10 @@ function initSmcModule() {
   const metricBullish = document.getElementById('smcMetricBullish');
   const metricAvg = document.getElementById('smcMetricAvg');
   const stockCountPill = document.getElementById('smcStockCountPill');
+  const smcLiveDateEl = document.getElementById('smcLiveDate');
+  const smcUpdateTimerEl = document.getElementById('smcUpdateTimer');
+  const btnRefreshSmc = document.getElementById('btnRefreshSmc');
+  const smcRefreshIcon = document.getElementById('smcRefreshIcon');
 
   const searchAddInput = document.getElementById('smcStockSearchInput');
   const searchAddClear = document.getElementById('smcStockSearchClear');
@@ -3523,6 +3527,15 @@ function initSmcModule() {
   let activeMtrSymbol = null;
   let activeMtrSliderVal = 75;
 
+  // Live Sync & MTR Surveillance State
+  let smcLastSyncTime = null;
+  let smcSecondsAgo = 0;
+  let smcAutoRefreshTimer = null;
+  let smcSecondsTicker = null;
+  let isSmcSyncing = false;
+  const smcNotifiedSymbols = new Set();
+  const smcCustomQuoteCache = {};
+
   const DEFAULT_SMC_ENTRIES = [
     { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd.', isMonitored: true, targetAnalysisPct: 80, addedAt: Date.now() - 86400000 },
     { symbol: 'HDFCBANK', name: 'HDFC Bank Limited', isMonitored: true, targetAnalysisPct: 75, addedAt: Date.now() - 72000000 },
@@ -3546,9 +3559,193 @@ function initSmcModule() {
 
   function saveSmcEntries(entries) {
     localStorage.setItem('trade_niti_smc_entries', JSON.stringify(entries));
-    // Also sync the symbol list for Watchlist SMC tags
     const symList = entries.map(e => e.symbol.toUpperCase());
     localStorage.setItem('trade_niti_smc_symbols', JSON.stringify(symList));
+  }
+
+  function resolveSmcStock(symbol) {
+    const sym = (symbol || '').toUpperCase().trim();
+    const master = findMasterStock(sym);
+    const liveCustom = smcCustomQuoteCache[sym];
+    if (liveCustom) {
+      return { ...master, ...liveCustom };
+    }
+    return master;
+  }
+
+  // Update Live Date & Auto-Refresh Countdown UI
+  function updateSmcTimestampUI() {
+    if (smcLiveDateEl) {
+      const today = new Date();
+      smcLiveDateEl.textContent = today.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    if (!smcUpdateTimerEl) return;
+
+    if (isSmcSyncing) {
+      smcUpdateTimerEl.innerHTML = `<span style="color:var(--brand-blue); font-weight:700;">Syncing live NSE quotes...</span>`;
+      return;
+    }
+    if (!smcLastSyncTime) {
+      smcUpdateTimerEl.textContent = 'Connecting live NSE sync \u2022 auto-refresh 30s';
+      return;
+    }
+
+    const timeStr = smcLastSyncTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const agoStr = smcSecondsAgo < 5 ? 'Just now' : `${smcSecondsAgo}s ago`;
+    smcUpdateTimerEl.innerHTML = `Updated ${agoStr} (${timeStr}) &bull; <span style="color:var(--brand-blue); font-weight:700;">auto-refresh 30s</span>`;
+  }
+
+  // Evaluate MTR ±3% Target Alerts (Matching SmcViewModel.kt lines 138-153)
+  function evaluateMtrAlerts(entries, suppressToast = false) {
+    entries.forEach(entry => {
+      if (!entry.isMonitored || entry.targetAnalysisPct == null) return;
+      const stock = resolveSmcStock(entry.symbol);
+      const currPct = stock.confluence || 50;
+      const targetPct = entry.targetAnalysisPct;
+      const diff = Math.abs(currPct - targetPct);
+
+      if (diff <= 3) {
+        if (!smcNotifiedSymbols.has(entry.symbol)) {
+          smcNotifiedSymbols.add(entry.symbol);
+          if (!suppressToast && typeof showToast === 'function') {
+            showToast(`\u26A1 MTR Target Alert: ${entry.symbol} reached ${currPct}% (Target: ${targetPct}% \u00B13%)!`, '\u26A1');
+          }
+        }
+      } else if (diff > 5) {
+        smcNotifiedSymbols.delete(entry.symbol);
+      }
+    });
+  }
+
+  // Live 30s NSE Quote Sync for ALL Stocks in SMC Surveillance
+  async function syncLiveSmcQuotes(isManual = false) {
+    if (isSmcSyncing) return;
+    const entries = getSmcEntries();
+    if (!entries || entries.length === 0) {
+      smcLastSyncTime = new Date();
+      smcSecondsAgo = 0;
+      updateSmcTimestampUI();
+      return;
+    }
+
+    isSmcSyncing = true;
+    if (smcRefreshIcon) smcRefreshIcon.style.animation = 'spin 0.8s linear infinite';
+    updateSmcTimestampUI();
+
+    let updatedCount = 0;
+
+    try {
+      await Promise.allSettled(entries.map(async (entry) => {
+        try {
+          const sym = (entry.symbol || '').toUpperCase().trim();
+          const qSym = (sym === 'TATAMOTORS') ? 'TMPV' : sym;
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 5000);
+          const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/quote?symbol=' + encodeURIComponent(qSym), { signal: controller.signal });
+          clearTimeout(timer);
+          if (!res.ok) return;
+          const data = await res.json();
+          if (data && data.priceInfo && data.priceInfo.lastPrice) {
+            const ltp = data.priceInfo.lastPrice;
+            const chg = data.priceInfo.change !== undefined ? data.priceInfo.change : 0;
+            const pchg = data.priceInfo.pChange !== undefined ? data.priceInfo.pChange : 0;
+
+            updatedCount++;
+
+            // Update TRADE_NITI_MASTER_STOCKS & MARKET_STOCKS_MASTER if present
+            let targetConf = null;
+            if (typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') {
+              const ms = TRADE_NITI_MASTER_STOCKS.find(s => s.symbol.toUpperCase() === sym);
+              if (ms) {
+                ms.price = ltp;
+                ms.ltp = ltp;
+                ms.change = chg;
+                ms.changePct = pchg;
+                if (data.priceInfo.intraDayHighLow) {
+                  if (data.priceInfo.intraDayHighLow.max) ms.high52 = Math.max(ms.high52 || 0, data.priceInfo.intraDayHighLow.max);
+                  if (data.priceInfo.intraDayHighLow.min) ms.low52 = Math.min(ms.low52 || ltp, data.priceInfo.intraDayHighLow.min);
+                }
+                if (pchg > 2.0) {
+                  ms.confluence = Math.min(96, Math.max(72, (ms.confluence || 50) + 3));
+                  ms.analysisPct = ms.confluence;
+                } else if (pchg < -2.0) {
+                  ms.confluence = Math.max(25, Math.min(48, (ms.confluence || 50) - 3));
+                  ms.analysisPct = ms.confluence;
+                }
+                targetConf = ms.confluence;
+              }
+            }
+            if (typeof MARKET_STOCKS_MASTER !== 'undefined') {
+              const mm = MARKET_STOCKS_MASTER.find(s => s.symbol.toUpperCase() === sym);
+              if (mm) {
+                mm.price = ltp;
+                mm.change = chg;
+                mm.changePct = pchg;
+              }
+            }
+
+            const existingBase = findMasterStock(sym);
+            smcCustomQuoteCache[sym] = {
+              price: ltp,
+              ltp: ltp,
+              change: chg,
+              changePct: pchg,
+              confluence: targetConf !== null ? targetConf : existingBase.confluence
+            };
+          }
+        } catch (_) {}
+      }));
+
+      smcLastSyncTime = new Date();
+      smcSecondsAgo = 0;
+
+      evaluateMtrAlerts(entries, false);
+
+      if (isManual && typeof showToast === 'function') {
+        if (updatedCount > 0) {
+          showToast(`SMC Radar synced ${updatedCount} live NSE ${updatedCount === 1 ? 'quote' : 'quotes'}!`, '\uD83D\uDCE1');
+        } else {
+          showToast('SMC Radar refreshed (Cached quotes active)', '\uD83D\uDCE1');
+        }
+      }
+    } catch (e) {
+      console.warn('SMC live sync error:', e);
+    } finally {
+      isSmcSyncing = false;
+      if (smcRefreshIcon) smcRefreshIcon.style.animation = '';
+      updateSmcTimestampUI();
+      renderSmc();
+    }
+  }
+
+  function startSmcTickers() {
+    stopSmcTickers();
+    smcSecondsTicker = setInterval(() => {
+      const smcSec = document.getElementById('smc-page');
+      if (smcSec && smcSec.style.display !== 'none') {
+        smcSecondsAgo++;
+        updateSmcTimestampUI();
+      }
+    }, 1000);
+
+    // 30-second live NSE surveillance polling loop when SMC is visible
+    smcAutoRefreshTimer = setInterval(() => {
+      const smcSec = document.getElementById('smc-page');
+      if (smcSec && smcSec.style.display !== 'none' && !isSmcSyncing) {
+        syncLiveSmcQuotes(false);
+      }
+    }, 30000);
+  }
+
+  function stopSmcTickers() {
+    if (smcSecondsTicker) {
+      clearInterval(smcSecondsTicker);
+      smcSecondsTicker = null;
+    }
+    if (smcAutoRefreshTimer) {
+      clearInterval(smcAutoRefreshTimer);
+      smcAutoRefreshTimer = null;
+    }
   }
 
   // Cross-module helpers
@@ -3588,6 +3785,8 @@ function initSmcModule() {
       smcBarrier.style.display = sub.isProWeb ? 'none' : 'flex';
     }
 
+    updateSmcTimestampUI();
+
     const entries = getSmcEntries();
     const notes = (typeof window.getStockNotesShared === 'function') ? window.getStockNotesShared() : {};
 
@@ -3598,7 +3797,7 @@ function initSmcModule() {
     let sumScore = 0;
 
     entries.forEach(e => {
-      const stock = findMasterStock(e.symbol);
+      const stock = resolveSmcStock(e.symbol);
       if (stock.confluence >= 60) bullishCount++;
       sumScore += stock.confluence;
     });
@@ -3609,11 +3808,11 @@ function initSmcModule() {
     if (metricMtr) metricMtr.textContent = `${mtrCount} ON`;
     if (metricBullish) metricBullish.textContent = `${bullishCount} Stocks`;
     if (metricAvg) metricAvg.textContent = `${avgScore}%`;
-    if (stockCountPill) stockCountPill.textContent = `${totalCount} stocks • ${mtrCount} monitored`;
+    if (stockCountPill) stockCountPill.textContent = `${totalCount} ${totalCount === 1 ? 'stock' : 'stocks'} \u2022 ${mtrCount} monitored`;
 
     // 2. Sort entries by Confluence % descending (Kotlin: sortedByAnalysis())
     let sorted = [...entries].map(e => {
-      const stock = findMasterStock(e.symbol);
+      const stock = resolveSmcStock(e.symbol);
       return {
         ...e,
         stock: stock
@@ -3651,8 +3850,10 @@ function initSmcModule() {
     if (tableBody) {
       tableBody.innerHTML = sorted.map(row => {
         const stock = row.stock;
-        const isUp = stock.change >= 0;
-        const sign = isUp ? '+' : '';
+        const pctVal = stock.changePct !== undefined ? stock.changePct : 0;
+        const chgVal = stock.change !== undefined ? stock.change : 0;
+        const isUp = (pctVal !== 0 ? pctVal : chgVal) >= 0;
+        const sign = isUp ? '+' : '-';
         const changeClass = isUp ? 'profit' : 'loss';
         const noteObj = notes[row.symbol];
         const hasNote = !!(noteObj && noteObj.note && noteObj.note.trim());
@@ -3662,7 +3863,10 @@ function initSmcModule() {
         if (stock.confluence < 40) confluenceClass = 'bearish';
         else if (stock.confluence < 60) confluenceClass = 'neutral';
 
-        const targetText = (row.isMonitored && row.targetAnalysisPct) ? `Target: ${row.targetAnalysisPct}%` : 'Target: Not Set';
+        const isTargetHit = !!(row.isMonitored && row.targetAnalysisPct != null && Math.abs(stock.confluence - row.targetAnalysisPct) <= 3);
+        const targetText = (row.isMonitored && row.targetAnalysisPct != null)
+          ? `Target: ${row.targetAnalysisPct}%${isTargetHit ? ' \u26A1 HIT' : ''}`
+          : 'Target: Not Set';
         const targetClass = row.isMonitored ? 'monitored' : 'unmonitored';
 
         return `
@@ -3681,7 +3885,7 @@ function initSmcModule() {
                 <div class="wl-stock-name">${row.name}</div>
                 ${hasNote ? `
                   <div class="note-preview-chip" data-action="note" data-symbol="${row.symbol}" title="Edit personal note">
-                    <span>📝 ${escapeHtml(noteObj.note.slice(0, 36))}${noteObj.note.length > 36 ? '…' : ''}</span>
+                    <span>\uD83D\uDCDD ${escapeHtml(noteObj.note.slice(0, 36))}${noteObj.note.length > 36 ? '\u2026' : ''}</span>
                   </div>
                 ` : ''}
               </div>
@@ -3690,8 +3894,8 @@ function initSmcModule() {
             <!-- Col 2: Price & Change -->
             <td>
               <div class="wl-price-cell">
-                <span class="wl-price-val">₹${stock.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                <span class="wl-change-val ${changeClass}">${sign}₹${Math.abs(stock.change).toFixed(2)} (${sign}${stock.changePct.toFixed(2)}%)</span>
+                <span class="wl-price-val">\u20B9${Number(stock.price || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                <span class="wl-change-val ${changeClass}">${sign}\u20B9${Math.abs(chgVal).toFixed(2)} (${sign}${Math.abs(pctVal).toFixed(2)}%)</span>
               </div>
             </td>
 
@@ -3700,7 +3904,7 @@ function initSmcModule() {
               <span class="wl-analysis-badge ${confluenceClass}">
                 ${stock.confluence}%
               </span>
-              <div class="smc-target-subtext ${targetClass}">
+              <div class="smc-target-subtext ${targetClass}" ${isTargetHit ? 'style="color:#10B981; font-weight:800;"' : ''}>
                 ${targetText}
               </div>
             </td>
@@ -3710,6 +3914,7 @@ function initSmcModule() {
               <button type="button" class="mtr-btn ${row.isMonitored ? 'on' : 'off'}" data-action="mtr" data-symbol="${row.symbol}" title="${row.isMonitored ? 'MTR Target Active - Click to Configure' : 'MTR Alert OFF - Click to Set Target'}">
                 ${row.isMonitored ? 'ON' : 'OFF'}
               </button>
+              ${isTargetHit ? '<div style="font-size:0.60rem; font-weight:800; color:#10B981; margin-top:2px; letter-spacing:0.3px;">\u26A1 \u00B13% MATCH</div>' : ''}
             </td>
 
             <!-- Col 5: Note Edit Button -->
@@ -3738,12 +3943,15 @@ function initSmcModule() {
 
       // Wire up row button actions
       tableBody.querySelectorAll('[data-action]').forEach(el => {
-        el.addEventListener('click', () => {
+        el.addEventListener('click', (e) => {
           const action = el.getAttribute('data-action');
           const symbol = el.getAttribute('data-symbol');
 
           if (action === 'detail') {
             if (window.openStockDetailModal) window.openStockDetailModal(symbol);
+          } else if (action === 'stock-analysis') {
+            e.stopPropagation();
+            if (window.openStockAnalysisCenter) window.openStockAnalysisCenter(symbol);
           } else if (action === 'chart') {
             window.open(`https://www.tradingview.com/chart/?symbol=NSE:${symbol}`, '_blank');
           } else if (action === 'mtr') {
@@ -3758,7 +3966,22 @@ function initSmcModule() {
     }
   }
 
-  window.renderSmcModule = renderSmc;
+  window.syncLiveSmcQuotes = syncLiveSmcQuotes;
+  window.renderSmcModule = function() {
+    updateSmcTimestampUI();
+    renderSmc();
+    startSmcTickers();
+    if (!smcLastSyncTime || (Date.now() - smcLastSyncTime.getTime() > 25000)) {
+      syncLiveSmcQuotes(false);
+    }
+  };
+
+  if (btnRefreshSmc) {
+    btnRefreshSmc.addEventListener('click', () => {
+      syncLiveSmcQuotes(true);
+      startSmcTickers();
+    });
+  }
 
   // Filter Toolbar Buttons
   filterBtns.forEach(btn => {
@@ -3785,7 +4008,9 @@ function initSmcModule() {
     saveSmcEntries(entries);
     renderSmc();
     if (window.renderActiveWatchlist) window.renderActiveWatchlist();
-    showToast(`Removed ${symbol} from SMC Radar`, '🗑');
+    if (typeof showToast === 'function') {
+      showToast(`Removed ${symbol} from SMC Radar`, '\uD83D\uDDD1\uFE0F');
+    }
   }
 
   // Add Stock to SMC
@@ -3793,10 +4018,12 @@ function initSmcModule() {
     const entries = getSmcEntries();
     const symUpper = symbol.toUpperCase();
     if (entries.find(e => e.symbol.toUpperCase() === symUpper)) {
-      showToast(`${symUpper} is already in SMC surveillance.`, 'ℹ️');
+      if (typeof showToast === 'function') {
+        showToast(`${symUpper} is already in SMC surveillance.`, '\u2139\uFE0F');
+      }
       return;
     }
-    const stock = findMasterStock(symUpper);
+    const stock = resolveSmcStock(symUpper);
     entries.push({
       symbol: stock.symbol,
       name: stock.name,
@@ -3806,8 +4033,11 @@ function initSmcModule() {
     });
     saveSmcEntries(entries);
     renderSmc();
+    syncLiveSmcQuotes(false);
     if (window.renderActiveWatchlist) window.renderActiveWatchlist();
-    showToast(`Added ${symUpper} to SMC Center!`, '📡');
+    if (typeof showToast === 'function') {
+      showToast(`Added ${symUpper} to SMC Center!`, '\uD83D\uDCE1');
+    }
   }
 
   // Quick Add Dropdown Search
@@ -3844,13 +4074,14 @@ function initSmcModule() {
             <div class="wl-search-item-name">${s.name}</div>
           </div>
           <div class="wl-search-item-price">
-            ₹${s.price.toFixed(2)}
+            \u20B9${s.price.toFixed(2)}
           </div>
         </div>
       `).join('');
 
       searchAddDropdown.querySelectorAll('.wl-search-item').forEach(item => {
-        item.addEventListener('click', () => {
+        item.addEventListener('click', (ev) => {
+          if (ev.target.closest('.link-stock-analysis')) return;
           const sym = item.getAttribute('data-sym');
           addSmcStock(sym);
           searchAddInput.value = '';
@@ -3895,11 +4126,11 @@ function initSmcModule() {
     const entry = entries.find(e => e.symbol.toUpperCase() === symbol.toUpperCase());
     if (!entry) return;
 
-    const stock = findMasterStock(symbol);
+    const stock = resolveSmcStock(symbol);
 
     if (mtrSymbolEl) mtrSymbolEl.textContent = stock.symbol;
     if (mtrNameEl) mtrNameEl.textContent = stock.name;
-    if (mtrPriceEl) mtrPriceEl.textContent = `₹${stock.price.toFixed(2)}`;
+    if (mtrPriceEl) mtrPriceEl.textContent = `\u20B9${Number(stock.price || 0).toFixed(2)}`;
     if (mtrCurrentAnalysisEl) mtrCurrentAnalysisEl.textContent = `${stock.confluence}%`;
     if (mtrSectorEl) mtrSectorEl.textContent = stock.sector;
 
@@ -3942,6 +4173,11 @@ function initSmcModule() {
   };
 
   if (closeMtrBtn) closeMtrBtn.addEventListener('click', closeMtrModal);
+  if (mtrModal) {
+    mtrModal.addEventListener('click', (e) => {
+      if (e.target === mtrModal) closeMtrModal();
+    });
+  }
 
   if (btnSaveMtr) {
     btnSaveMtr.addEventListener('click', () => {
@@ -3952,8 +4188,12 @@ function initSmcModule() {
         entry.isMonitored = true;
         entry.targetAnalysisPct = activeMtrSliderVal;
         saveSmcEntries(entries);
-        showToast(`MTR Alert active for ${activeMtrSymbol} at ${activeMtrSliderVal}%!`, '⚡');
+        smcNotifiedSymbols.delete(entry.symbol);
+        if (typeof showToast === 'function') {
+          showToast(`MTR Alert active for ${activeMtrSymbol} at ${activeMtrSliderVal}%!`, '\u26A1');
+        }
         closeMtrModal();
+        evaluateMtrAlerts(entries, false);
         renderSmc();
       }
     });
@@ -3967,7 +4207,10 @@ function initSmcModule() {
       if (entry) {
         entry.isMonitored = false;
         saveSmcEntries(entries);
-        showToast(`MTR Alert turned OFF for ${activeMtrSymbol}`, 'ℹ️');
+        smcNotifiedSymbols.delete(entry.symbol);
+        if (typeof showToast === 'function') {
+          showToast(`MTR Alert turned OFF for ${activeMtrSymbol}`, '\u2139\uFE0F');
+        }
         closeMtrModal();
         renderSmc();
       }
@@ -3975,6 +4218,7 @@ function initSmcModule() {
   }
 
   // Initial SMC Boot
+  updateSmcTimestampUI();
   renderSmc();
 }
 
