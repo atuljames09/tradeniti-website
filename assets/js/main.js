@@ -3990,7 +3990,6 @@ function initNewsModule() {
   const searchInput = document.getElementById('newsSearchInput');
   const searchClear = document.getElementById('newsSearchClear');
   const refreshBtn = document.getElementById('btnRefreshNews');
-  const refreshIcon = document.getElementById('newsRefreshIcon');
   const hotTickerChips = document.querySelectorAll('.hot-ticker-chip');
   const liveDateEl = document.getElementById('newsLiveDate');
   const updateTimerEl = document.getElementById('newsUpdateTimer');
@@ -4022,233 +4021,630 @@ function initNewsModule() {
   let activeTickerFilter = null;
   let activeModalArticle = null;
 
-  // Curated Institutional Indian Financial News Dataset
-  const MASTER_NEWS_ARTICLES = [
+  const NEWS_CACHE_KEY = 'trade_niti_live_news_cache_v2';
+  let isFetchingNews = false;
+  let newsLastSyncTime = null;
+  let newsSecondsAgo = 0;
+  let newsAutoRefreshTimer = null;
+  let newsSecondsTicker = null;
+  let newsRelativeRefreshCounter = 0;
+  let newsRotationWave = 0;
+  let proxyNewsSupported = null; // null = untested, true = live Vercel /api/news, false = 404 fallback
+  let rss2jsonCooldownUntil = 0;
+  let hasLiveFeedLoaded = false;
+
+  // Real-Time RSS Feed Sources Matching NewsRepository.kt
+  const NEWS_RSS_CHANNELS = [
     {
-      id: 'news-1',
-      title: 'Nifty 50 Rebounds Towards 25,200 as FII Selling Eases; IT and Banking Lead Rally',
-      description: 'Indian benchmark indices snapped a two-day losing streak as heavyweights HDFC Bank and Infosys staged strong recoveries supported by steady institutional accumulation.',
-      link: 'https://economictimes.indiatimes.com/markets',
-      pubDate: '15 mins ago',
-      sourceName: 'ET Markets',
+      url: 'https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms',
       category: 'Markets',
-      sourceColor: '#1565C0',
-      sentiment: 'bullish',
-      impact: 'Bullish for Nifty 50 & Bank Nifty',
-      tickers: ['NIFTY', 'HDFCBANK', 'INFY'],
-      context: 'Nifty reclaimed its 20-day exponential moving average with positive momentum confluence. Swing setups in private banking display strong risk-reward ratio.'
-    },
-    {
-      id: 'news-2',
-      title: 'Tata Motors Shares Surge 3.2% as Global EV Sales Jump 18% YoY with Strong JLR Order Backlog',
-      description: 'Tata Motors rallied sharply following strong operational disclosures from Jaguar Land Rover, with defender and Range Rover models commanding over 140,000 forward bookings.',
-      link: 'https://www.livemint.com/market/stock-market-news',
-      pubDate: '32 mins ago',
-      sourceName: 'LiveMint',
-      category: 'Stocks',
-      sourceColor: '#2E7D32',
-      sentiment: 'bullish',
-      impact: 'Bullish for Auto Sector',
-      tickers: ['TATAMOTORS'],
-      context: 'Confluence algorithm indicates a strong breakout above ₹920 resistance with expanding volume and positive EMA-9/21 cross.'
-    },
-    {
-      id: 'news-3',
-      title: 'RBI Monetary Policy Committee Keeps Repo Rate Steady at 6.50%; Reaffirms Robust 7.2% India GDP Forecast',
-      description: 'Reserve Bank Governor announced the MPC unanimous decision to maintain status quo on key benchmark interest rates while preserving an active vigil on disinflation trajectory.',
-      link: 'https://economictimes.indiatimes.com/economy',
-      pubDate: '1 hour ago',
-      sourceName: 'ET Economy',
-      category: 'Economy',
-      sourceColor: '#6A1B9A',
-      sentiment: 'neutral',
-      impact: 'Neutral Macro Cues',
-      tickers: ['BANKNIFTY', 'SBIN'],
-      context: 'Predictable monetary policy environment supports corporate borrowing costs and keeps domestic liquidity stable across capital goods and housing.'
-    },
-    {
-      id: 'news-4',
-      title: 'Mutual Fund SIP Inflows Hit Record High of ₹23,500 Crore per Month as Retail Liquidity Anchors Equities',
-      description: 'Data from AMFI indicates systematic investment plan inflows recorded fresh all-time highs, providing substantial liquidity cushion that offsets foreign institutional adjustments.',
-      link: 'https://www.ndtvprofit.com/ipo',
-      pubDate: '1.5 hours ago',
-      sourceName: 'NDTV Profit',
-      category: 'IPO & Funds',
-      sourceColor: '#E65100',
-      sentiment: 'bullish',
-      impact: 'Bullish Domestic Liquidity',
-      tickers: ['NIFTY', 'MIDCAP'],
-      context: 'Consistent domestic institutional fund inflows cushion sharp index pullbacks, creating recurring dip-buying support across Nifty 500 equities.'
-    },
-    {
-      id: 'news-5',
-      title: 'HDFC Bank Credit-to-Deposit Ratio Moderates to 98.4%; Core Net Interest Margins Show Healthy Traction',
-      description: 'India largest private lender reported solid operational metrics with quarterly deposit accretion outpacing advances, alleviating Street concerns around balance sheet leverage.',
-      link: 'https://www.livemint.com/market/stock-market-news',
-      pubDate: '2 hours ago',
-      sourceName: 'LiveMint',
-      category: 'Stocks',
-      sourceColor: '#2E7D32',
-      sentiment: 'bullish',
-      impact: 'Strong Upside for Private Banking',
-      tickers: ['HDFCBANK'],
-      context: 'Stock is consolidating near its 50-DMA with multi-timeframe swing confluence rating of 82%, offering an attractive swing entry.'
-    },
-    {
-      id: 'news-6',
-      title: 'Sensex Closes 410 Points Higher Led by Private Bank Buying; Volatility Index India VIX Cools to 12.8',
-      description: 'BSE Sensex gained over 400 points as short covering in heavyweights and stabilizing crude oil prices bolstered investor confidence across frontline blue chips.',
-      link: 'https://economictimes.indiatimes.com/markets',
-      pubDate: '2.5 hours ago',
       sourceName: 'ET Markets',
-      category: 'Markets',
-      sourceColor: '#1565C0',
-      sentiment: 'bullish',
-      impact: 'Declining Market Volatility',
-      tickers: ['SENSEX', 'RELIANCE'],
-      context: 'Low volatility index indicates lower options implied premiums and favorable conditions for multi-day directional trend swings.'
+      sourceColor: '#1565C0'
     },
     {
-      id: 'news-7',
-      title: 'Reliance Industries Arm Secures Massive 1.2 GW Solar Project in Gujarat; Green Energy Outlay on Track',
-      description: 'Reliance New Energy was awarded the 1,200 MW solar park mandate by GUVNL under long-term power purchase agreements, expanding its renewable generation pipeline.',
-      link: 'https://www.livemint.com/market/stock-market-news',
-      pubDate: '3 hours ago',
-      sourceName: 'LiveMint',
+      url: 'https://www.livemint.com/rss/markets',
       category: 'Stocks',
-      sourceColor: '#2E7D32',
-      sentiment: 'bullish',
-      impact: 'Expansion in Green Energy',
-      tickers: ['RELIANCE'],
-      context: 'Clean momentum continuation after testing key support at ₹2,920. SuperTrend remains positive across the daily frame.'
+      sourceName: 'LiveMint',
+      sourceColor: '#2E7D32'
     },
     {
-      id: 'news-8',
-      title: 'Gross GST Collections Cross ₹1.82 Lakh Crore Mark; Robust Domestic Transactions Signal Economic Vigor',
-      description: 'Finance Ministry receipts revealed a 9.2% YoY surge in GST collections driven by festive retail spending, automobile shipments, and enhanced digital compliance.',
-      link: 'https://economictimes.indiatimes.com/economy',
-      pubDate: '3.5 hours ago',
-      sourceName: 'ET Economy',
+      url: 'https://economictimes.indiatimes.com/economy/rssfeeds/1373380680.cms',
       category: 'Economy',
-      sourceColor: '#6A1B9A',
-      sentiment: 'bullish',
-      impact: 'Strong Fiscal Health Indicator',
-      tickers: ['NIFTY'],
-      context: 'Buoyant indirect tax collections reduce sovereign borrowing requirements and stimulate capital expenditure announcements.'
-    },
-    {
-      id: 'news-9',
-      title: 'Upcoming Mainboard Tech IPO Subscribed 18.4 Times on Final Day Led by Massive Institutional Bidding',
-      description: 'Qualified Institutional Buyers (QIBs) poured over ₹12,000 crore on the closing session, pushing the overall issue oversubscription to the top tier of primary market offerings.',
-      link: 'https://www.ndtvprofit.com/ipo',
-      pubDate: '4 hours ago',
-      sourceName: 'NDTV Profit',
-      category: 'IPO & Funds',
-      sourceColor: '#E65100',
-      sentiment: 'bullish',
-      impact: 'Robust Primary Market Appetite',
-      tickers: ['MIDCAP'],
-      context: 'High institutional participation indicates strong liquidity willingness to absorb new equity issuances without draining secondary markets.'
-    },
-    {
-      id: 'news-10',
-      title: 'Infosys Bags Multi-Year $450 Million Cloud Transformation Deal with Leading European Financial Giant',
-      description: 'The IT exporter announced a landmark multi-year contract for mainframe modernization and hybrid cloud migration, bolstering its second-half revenue visibility.',
-      link: 'https://www.livemint.com/market/stock-market-news',
-      pubDate: '4.5 hours ago',
-      sourceName: 'LiveMint',
-      category: 'Stocks',
-      sourceColor: '#2E7D32',
-      sentiment: 'bullish',
-      impact: 'Order Book Expansion for IT',
-      tickers: ['INFY', 'TCS'],
-      context: 'Tier-1 IT stocks have formed a rounding bottom pattern with positive divergence on daily RSI (Relative Strength Index).'
-    },
-    {
-      id: 'news-11',
-      title: 'Crude Oil Prices Edge Higher Toward $78/bbl on West Asia Geopolitical Cues; OMCs and Paints Trade Cautious',
-      description: 'Brent crude recorded moderate gains following supply interruption concerns in the Strait of Hormuz, causing mild profit booking in oil marketing companies and paint manufacturers.',
-      link: 'https://economictimes.indiatimes.com/markets',
-      pubDate: '5 hours ago',
-      sourceName: 'ET Markets',
-      category: 'Markets',
-      sourceColor: '#1565C0',
-      sentiment: 'bearish',
-      impact: 'Caution for OMCs & Paint Stocks',
-      tickers: ['BPCL', 'ASIANPAINT'],
-      context: 'Higher raw material input prices may temporarily squeeze EBITDA margins. Watch trailing stop losses on FMCG and downstream petrochemical names.'
-    },
-    {
-      id: 'news-12',
-      title: 'Titan Company Reports 25% YoY Festive Jewelry Growth; Retail Store Expansion Accelerates Ahead of Diwali',
-      description: 'Tata Group luxury and jewelry flagship witnessed strong consumer footfalls across Tanishq and Mia showrooms, outperforming Street consensus quarterly estimates.',
-      link: 'https://www.livemint.com/market/stock-market-news',
-      pubDate: '5.5 hours ago',
-      sourceName: 'LiveMint',
-      category: 'Stocks',
-      sourceColor: '#2E7D32',
-      sentiment: 'bullish',
-      impact: 'Strong Consumer Demand Surge',
-      tickers: ['TITAN'],
-      context: 'Confluence score stands at 79% with robust swing momentum. Trend breakout above weekly pivot points intact.'
-    },
-    {
-      id: 'news-13',
-      title: 'State Bank of India Approves ₹10,000 Crore Infrastructure Bond Issue; Strong Tier-1 Capital Cushion',
-      description: 'The state-run lender board cleared issuance of long-term infra bonds to finance power and highway projects, taking advantage of competitive domestic yields.',
-      link: 'https://www.livemint.com/market/stock-market-news',
-      pubDate: '6 hours ago',
-      sourceName: 'LiveMint',
-      category: 'Stocks',
-      sourceColor: '#2E7D32',
-      sentiment: 'bullish',
-      impact: 'Balance Sheet Strengthening',
-      tickers: ['SBIN'],
-      context: 'SBI trades with a comfortable price-to-book multiple and high asset quality metrics, keeping swing bullishness active.'
-    },
-    {
-      id: 'news-14',
-      title: 'SEBI Proposes Tighter Derivative Framework for Index Options to Protect Retail Participants',
-      description: 'Capital market regulator released consultative paper recommending higher contract sizes, upfront premium collection, and rationalization of weekly index contract expiries.',
-      link: 'https://www.ndtvprofit.com/ipo',
-      pubDate: '7 hours ago',
-      sourceName: 'NDTV Profit',
-      category: 'IPO & Funds',
-      sourceColor: '#E65100',
-      sentiment: 'neutral',
-      impact: 'Regulatory Restructuring',
-      tickers: ['NIFTY', 'BANKNIFTY'],
-      context: 'Shifts speculation towards cash equities and structured swing strategies, directly benefiting disciplined equity swing trading models.'
-    },
-    {
-      id: 'news-15',
-      title: 'India Manufacturing PMI Stays in Strong Expansion Zone at 58.1 on Robust New Domestic Orders',
-      description: 'HSBC India Manufacturing Purchasing Managers Index confirmed persistent factory output momentum with accelerated hiring and stable input inflation.',
-      link: 'https://economictimes.indiatimes.com/economy',
-      pubDate: '8 hours ago',
       sourceName: 'ET Economy',
-      category: 'Economy',
-      sourceColor: '#6A1B9A',
-      sentiment: 'bullish',
-      impact: 'Strong Industrial Expansion',
-      tickers: ['TATAMOTORS', 'POWERGRID'],
-      context: 'High PMI prints validate the industrial and manufacturing capex super-cycle across Indian engineering and automotive spaces.'
+      sourceColor: '#6A1B9A'
     },
     {
-      id: 'news-16',
-      title: 'DII Net Buying in Indian Equities Crosses ₹32,000 Crore This Month, Absorbing Foreign Outflows',
-      description: 'Domestic institutional investors including mutual funds, pension funds, and insurers demonstrated record counter-cyclical buying, stabilizing frontline valuations.',
-      link: 'https://www.ndtvprofit.com/ipo',
-      pubDate: '9 hours ago',
-      sourceName: 'NDTV Profit',
+      url: 'https://economictimes.indiatimes.com/markets/ipos/fpos/rssfeeds/14655708.cms',
       category: 'IPO & Funds',
-      sourceColor: '#E65100',
-      sentiment: 'bullish',
-      impact: 'Strong Valuation Anchor',
-      tickers: ['NIFTY', 'MIDCAP'],
-      context: 'Institutional absorption provides high reliability to pullback buy signals produced by Trade Niti Swing V3 confluence algorithms.'
+      sourceName: 'ET IPO & Funds',
+      sourceColor: '#E65100'
     }
   ];
+
+  const BING_INDIA_MARKET_RSS = {
+    url: 'https://www.bing.com/news/search?q=Nifty+Sensex+Indian+Stock+Market&format=rss',
+    category: 'Markets',
+    sourceName: 'Market Pulse',
+    sourceColor: '#0284C7'
+  };
+
+  // Offline / Initial Instant Baseline Fallback Articles (Replaced automatically once live feeds arrive)
+  function buildSeedArticles() {
+    const now = Date.now();
+    return [
+      {
+        id: 'seed-1',
+        title: 'Nifty 50 Tracks Global Cues & FII Flows as IT, Private Banks Lead Early Activity',
+        description: 'Indian equity benchmarks remain focused on institutional FII/DII positioning, quarterly earnings momentum, and rupee stability across frontline NIFTY 50 constituents.',
+        link: 'https://economictimes.indiatimes.com/markets',
+        pubTimestamp: now - 15 * 60 * 1000,
+        sourceName: 'ET Markets',
+        category: 'Markets',
+        sourceColor: '#1565C0',
+        sentiment: 'bullish',
+        impact: 'Bullish Market Watch',
+        tickers: ['NIFTY', 'HDFCBANK', 'INFY'],
+        context: 'Live institutional RSS channels sync automatically every 60s. Click Refresh anytime to pull the latest breaking wire headlines.',
+        isSeed: true
+      },
+      {
+        id: 'seed-2',
+        title: 'State Bank of India & Frontline PSU Banks Attract Institutional Accumulation on Healthy NIM Outlook',
+        description: 'Strong credit growth and improving asset quality ratios keep banking heavyweights on institutional swing radars.',
+        link: 'https://www.livemint.com/market/stock-market-news',
+        pubTimestamp: now - 40 * 60 * 1000,
+        sourceName: 'LiveMint',
+        category: 'Stocks',
+        sourceColor: '#2E7D32',
+        sentiment: 'bullish',
+        impact: 'Bullish Sector Catalyst',
+        tickers: ['SBIN', 'BANKNIFTY'],
+        context: 'Banking sector leadership supports multi-timeframe Swing V3 setups across liquid Nifty Bank components.',
+        isSeed: true
+      },
+      {
+        id: 'seed-3',
+        title: 'India Direct Tax & GST Collections Signal Resilient Domestic Demand Momentum',
+        description: 'Direct tax and indirect tax receipts underscore steady corporate earnings visibility and macro fiscal discipline.',
+        link: 'https://economictimes.indiatimes.com/economy',
+        pubTimestamp: now - 90 * 60 * 1000,
+        sourceName: 'ET Economy',
+        category: 'Economy',
+        sourceColor: '#6A1B9A',
+        sentiment: 'neutral',
+        impact: 'Macro Fiscal Indicator',
+        tickers: ['NIFTY', 'RELIANCE'],
+        context: 'Constructive domestic macro data provides medium-term floor support for cyclical and infrastructure themes.',
+        isSeed: true
+      },
+      {
+        id: 'seed-4',
+        title: 'Domestic Mutual Fund SIP Inflows & Primary IPO Pipeline Highlight Retail Liquidity Strength',
+        description: 'Steady domestic institutional flows and active SEBI DRHP filings keep primary and secondary market liquidity buoyant.',
+        link: 'https://economictimes.indiatimes.com/markets/ipos/fpos',
+        pubTimestamp: now - 140 * 60 * 1000,
+        sourceName: 'ET IPO & Funds',
+        category: 'IPO & Funds',
+        sourceColor: '#E65100',
+        sentiment: 'bullish',
+        impact: 'Liquidity Cushion',
+        tickers: ['NIFTY', 'SENSEX'],
+        context: 'Sustained mutual fund SIP participation absorbs foreign selling bouts and stabilizes quality swing breakouts.',
+        isSeed: true
+      }
+    ];
+  }
+
+  let LIVE_NEWS_ARTICLES = [];
+
+  // Load cached live articles immediately on boot
+  function loadCachedNews() {
+    try {
+      const raw = localStorage.getItem(NEWS_CACHE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.articles) && parsed.articles.length > 0) {
+          const ageMs = Date.now() - (parsed.fetchedAt || 0);
+          // Accept cached live articles up to 4 hours old while syncing fresh ticks
+          if (ageMs < 4 * 60 * 60 * 1000) {
+            LIVE_NEWS_ARTICLES = parsed.articles;
+            hasLiveFeedLoaded = LIVE_NEWS_ARTICLES.some(a => !a.isSeed);
+            if (parsed.fetchedAt && hasLiveFeedLoaded) {
+              newsLastSyncTime = new Date(parsed.fetchedAt);
+              newsSecondsAgo = Math.max(0, Math.floor((Date.now() - parsed.fetchedAt) / 1000));
+            }
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('News cache read error:', e);
+    }
+    LIVE_NEWS_ARTICLES = buildSeedArticles();
+  }
+
+  function saveCachedNews(articles) {
+    try {
+      const payload = {
+        fetchedAt: Date.now(),
+        articles: articles.slice(0, 60)
+      };
+      localStorage.setItem(NEWS_CACHE_KEY, JSON.stringify(payload));
+    } catch (e) {
+      console.warn('News cache write error:', e);
+    }
+  }
+
+  // Utilities: Clean Text, Timestamps, Sentiment, and Ticker Recognition
+  function cleanNewsText(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&#8216;|&#8217;|&#x27;|&#39;|\\u0027/g, "'")
+      .replace(/&#8220;|&#8221;|&quot;/g, '"')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function parseNewsTimestamp(pubDateStr) {
+    if (typeof pubDateStr === 'number' && !isNaN(pubDateStr)) return pubDateStr;
+    if (!pubDateStr) return Date.now();
+    const s = String(pubDateStr).trim();
+    // rss2json formats UTC timestamps as "YYYY-MM-DD HH:mm:ss" without 'Z'
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(s)) {
+      const t = Date.parse(s.replace(' ', 'T') + 'Z');
+      return isNaN(t) ? Date.now() : t;
+    }
+    const t = Date.parse(s);
+    return isNaN(t) ? Date.now() : t;
+  }
+
+  function formatRelativeNewsTime(ts) {
+    if (!ts || isNaN(ts)) return 'Just now';
+    const diffMs = Math.max(0, Date.now() - ts);
+    if (diffMs < 60000) return 'Just now';
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 60) return `${mins} min${mins === 1 ? '' : 's'} ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) + ', ' +
+      d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+
+  function classifyNewsSentiment(title, desc) {
+    const text = `${title || ''} ${desc || ''}`.toLowerCase();
+    const bullishWords = [
+      'surge', 'surges', 'rally', 'rallies', 'gain', 'gains', 'jump', 'jumps',
+      'rise', 'rises', 'high', 'record', 'profit', 'growth', 'buy', 'upgrade',
+      'inflow', 'inflows', 'rebound', 'beat', 'beats', 'bull', 'bullish', 'dividend',
+      'approved', 'boost', 'strong', 'soar', 'outperform', 'positive', 'expansion',
+      'order win', 'bagged', 'awarded', 'reclaim', 'top pick'
+    ];
+    const bearishWords = [
+      'fall', 'falls', 'drop', 'drops', 'crash', 'crashes', 'plunge', 'slump',
+      'loss', 'losses', 'sell', 'selloff', 'downgrade', 'outflow', 'outflows',
+      'caution', 'risk', 'inflation', 'conflict', 'penalty', 'contempt', 'miss',
+      'bear', 'bearish', 'weak', 'decline', 'declines', 'dip', 'deficit', 'slide',
+      'drag', 'tumble', 'warning', 'ban', 'probe', 'concern', 'pressure', 'hemmed'
+    ];
+
+    let score = 0;
+    bullishWords.forEach(w => { if (text.includes(w)) score++; });
+    bearishWords.forEach(w => { if (text.includes(w)) score--; });
+
+    if (score > 0) {
+      return { sentiment: 'bullish', impact: 'Bullish Catalyst' };
+    }
+    if (score < 0) {
+      return { sentiment: 'bearish', impact: 'Caution / Bearish Signal' };
+    }
+    return { sentiment: 'neutral', impact: 'Neutral / Macro Watch' };
+  }
+
+  const TICKER_KEYWORD_MAP = [
+    { symbol: 'NIFTY', keys: ['nifty 50', 'nifty50', 'nifty', 'gift nifty'] },
+    { symbol: 'SENSEX', keys: ['sensex', 'bse sensex'] },
+    { symbol: 'BANKNIFTY', keys: ['bank nifty', 'banknifty', 'nifty bank'] },
+    { symbol: 'TATAMOTORS', keys: ['tata motors', 'tatamotors', 'jlr', 'tmpv'] },
+    { symbol: 'HDFCBANK', keys: ['hdfc bank', 'hdfcbank'] },
+    { symbol: 'RELIANCE', keys: ['reliance', 'jio', 'mukesh ambani', 'ril'] },
+    { symbol: 'INFY', keys: ['infosys', 'infy'] },
+    { symbol: 'TCS', keys: ['tcs', 'tata consultancy'] },
+    { symbol: 'SBIN', keys: ['state bank', 'sbi '] },
+    { symbol: 'ICICIBANK', keys: ['icici bank', 'icicibank'] },
+    { symbol: 'AXISBANK', keys: ['axis bank', 'axisbank'] },
+    { symbol: 'KOTAKBANK', keys: ['kotak mahindra', 'kotak bank'] },
+    { symbol: 'TITAN', keys: ['titan company', 'tanishq', 'titan'] },
+    { symbol: 'WIPRO', keys: ['wipro'] },
+    { symbol: 'BAJFINANCE', keys: ['bajaj finance', 'bajfinance'] },
+    { symbol: 'YESBANK', keys: ['yes bank', 'yesbank'] },
+    { symbol: 'EXIDEIND', keys: ['exide'] },
+    { symbol: 'AMARAJABAT', keys: ['amara raja'] },
+    { symbol: 'ADANIENT', keys: ['adani'] },
+    { symbol: 'LT', keys: ['larsen & toubro', 'l&t'] },
+    { symbol: 'RBI', keys: ['rbi', 'reserve bank', 'mpc', 'repo rate'] },
+    { symbol: 'SEBI', keys: ['sebi'] }
+  ];
+
+  function extractNewsTickers(text, presetTickers = []) {
+    const found = new Set(Array.isArray(presetTickers) ? presetTickers : []);
+    const lower = ' ' + (text || '').toLowerCase() + ' ';
+    for (const item of TICKER_KEYWORD_MAP) {
+      if (item.keys.some(k => lower.includes(k))) {
+        found.add(item.symbol);
+      }
+      if (found.size >= 3) break;
+    }
+    if (found.size === 0 && typeof TRADE_NITI_MASTER_STOCKS !== 'undefined') {
+      const upperText = (text || '').toUpperCase();
+      for (let i = 0; i < Math.min(80, TRADE_NITI_MASTER_STOCKS.length); i++) {
+        const sym = TRADE_NITI_MASTER_STOCKS[i].symbol;
+        if (sym.length >= 3 && new RegExp(`\\b${sym}\\b`).test(upperText)) {
+          found.add(sym);
+          if (found.size >= 3) break;
+        }
+      }
+    }
+    if (found.size === 0) found.add('NIFTY');
+    return Array.from(found).slice(0, 3);
+  }
+
+  function buildSwingContext(sentimentInfo, tickers, category) {
+    const tickerLabel = tickers && tickers.length ? tickers.join(', ') : 'broad market indices';
+    if (sentimentInfo.sentiment === 'bullish') {
+      return `Positive fundamental/sentiment catalyst affecting ${tickerLabel}. Check daily SuperTrend and Swing V3 Confluence score (>70%) in the Analysis Center before entering momentum swings.`;
+    }
+    if (sentimentInfo.sentiment === 'bearish') {
+      return `Caution/volatility headline impacting ${tickerLabel} (${category}). Monitor support zones, trailing stop-losses, and avoid chasing gap-downs without 15m/1h confirmation.`;
+    }
+    return `Macro/sector development relevant to ${tickerLabel} (${category}). Watch opening price reaction, FII/DII institutional absorption, and multi-timeframe RSI alignment.`;
+  }
+
+  function normalizeArticle(raw) {
+    const title = cleanNewsText(raw.title);
+    let description = cleanNewsText(raw.description || raw.content || title);
+    if (description.length > 260) description = description.slice(0, 257).trim() + '...';
+
+    // Remove "- SourceName" trailing suffix appended by some RSS feeds
+    let cleanTitle = title;
+    const dashIdx = cleanTitle.lastIndexOf(' - ');
+    if (dashIdx > 30) cleanTitle = cleanTitle.slice(0, dashIdx).trim();
+
+    const sentimentInfo = classifyNewsSentiment(cleanTitle, description);
+    const tickers = extractNewsTickers(`${cleanTitle} ${description}`, raw.tickers);
+    const pubTimestamp = parseNewsTimestamp(raw.pubTimestamp || raw.pubDate);
+
+    return {
+      id: raw.id || ('live-' + btoa(unescape(encodeURIComponent((raw.link || cleanTitle).slice(0, 48)))).replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)),
+      title: cleanTitle,
+      description: description || cleanTitle,
+      link: raw.link || 'https://economictimes.indiatimes.com/markets',
+      pubTimestamp,
+      sourceName: raw.sourceName || 'ET Markets',
+      category: raw.category || 'Markets',
+      sourceColor: raw.sourceColor || '#1565C0',
+      sentiment: sentimentInfo.sentiment,
+      impact: sentimentInfo.impact,
+      tickers,
+      context: raw.context || buildSwingContext(sentimentInfo, tickers, raw.category || 'Markets'),
+      isSeed: false
+    };
+  }
+
+  function mergeLiveArticles(incoming) {
+    if (!Array.isArray(incoming) || incoming.length === 0) return;
+    // Remove temporary seed baseline once genuine live stories land
+    const existingLive = LIVE_NEWS_ARTICLES.filter(a => !a.isSeed);
+    const map = new Map();
+
+    // Put incoming first so fresh timestamps/descriptions win
+    [...incoming, ...existingLive].forEach(art => {
+      if (!art || !art.title) return;
+      const dedupeKey = art.title.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 55);
+      if (dedupeKey && !map.has(dedupeKey)) {
+        map.set(dedupeKey, art);
+      }
+    });
+
+    const merged = Array.from(map.values())
+      .sort((a, b) => (b.pubTimestamp || 0) - (a.pubTimestamp || 0))
+      .slice(0, 60);
+
+    if (merged.length > 0) {
+      LIVE_NEWS_ARTICLES = merged;
+      hasLiveFeedLoaded = true;
+      saveCachedNews(merged);
+    }
+  }
+
+  // Update Header Clock & Live Status Text
+  function updateNewsTimerUI() {
+    if (liveDateEl) {
+      const today = new Date();
+      liveDateEl.textContent = today.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
+    if (!updateTimerEl) return;
+
+    if (isFetchingNews) {
+      updateTimerEl.innerHTML = `<span style="color:var(--brand-blue); font-weight:700;">Syncing Live RSS Feeds...</span>`;
+      return;
+    }
+    if (!newsLastSyncTime) {
+      updateTimerEl.innerHTML = `<span style="color:var(--text-muted);">Connecting Live RSS Channels...</span>`;
+      return;
+    }
+
+    const timeStr = newsLastSyncTime.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const agoStr = newsSecondsAgo < 5 ? 'Just now' : `${newsSecondsAgo}s ago`;
+    updateTimerEl.innerHTML = `<span style="display:inline-flex; align-items:center; gap:4px; font-weight:600; color:var(--text-primary);"><span class="pulse-dot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#10B981; box-shadow:0 0 6px rgba(16,185,129,0.7);"></span>Live Synced ${agoStr} (${timeStr})</span> &bull; <span style="color:var(--brand-blue); font-weight:700;">Auto-refresh 60s</span>`;
+  }
+
+  // Raw RSS XML parser for direct proxy / localhost feeds
+  function parseXmlFeedString(xmlStr, channel) {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(xmlStr, 'text/xml');
+      const items = Array.from(doc.querySelectorAll('item')).slice(0, 12);
+      return items.map(item => {
+        const title = item.querySelector('title')?.textContent || '';
+        const description = item.querySelector('description')?.textContent || '';
+        const link = item.querySelector('link')?.textContent || '';
+        const pubDate = item.querySelector('pubDate')?.textContent || '';
+        return normalizeArticle({
+          title,
+          description,
+          link: cleanNewsText(link),
+          pubDate: cleanNewsText(pubDate),
+          sourceName: channel.sourceName,
+          category: channel.category,
+          sourceColor: channel.sourceColor
+        });
+      }).filter(a => a.title && a.link);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // Fetch single feed via rss2json (Universal: works on file://, http://, https://)
+  async function fetchChannelViaRss2Json(channel) {
+    if (Date.now() < rss2jsonCooldownUntil) return { status: 'cooldown', articles: [] };
+    const apiUrl = 'https://api.rss2json.com/v1/api.json?rss_url=' + encodeURIComponent(channel.url);
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7500);
+    try {
+      const res = await fetch(apiUrl, { signal: controller.signal });
+      clearTimeout(timer);
+      if (res.status === 429) {
+        rss2jsonCooldownUntil = Date.now() + 65000;
+        return { status: '429', articles: [] };
+      }
+      if (!res.ok) return { status: 'err', articles: [] };
+      const data = await res.json();
+      if (data && data.status === 'ok' && Array.isArray(data.items)) {
+        const articles = data.items.slice(0, 12).map(it => normalizeArticle({
+          title: it.title,
+          description: it.description || it.content,
+          link: it.link,
+          pubDate: it.pubDate,
+          sourceName: channel.sourceName,
+          category: channel.category,
+          sourceColor: channel.sourceColor
+        })).filter(a => a.title);
+        return { status: 'ok', articles };
+      }
+      return { status: 'empty', articles: [] };
+    } catch (_) {
+      clearTimeout(timer);
+      return { status: 'neterr', articles: [] };
+    }
+  }
+
+  // Real-time Multi-Source Live Fetcher
+  async function fetchLiveMarketNews(isManual = false) {
+    if (isFetchingNews) return;
+    isFetchingNews = true;
+    if (refreshBtn && isManual) refreshBtn.classList.add('spinning');
+    updateNewsTimerUI();
+
+    let fetchedCount = 0;
+
+    try {
+      // Tier 1: Try dedicated Vercel Mumbai Proxy (/api/news) if deployed or untested
+      if (proxyNewsSupported !== false) {
+        try {
+          const ctrl = new AbortController();
+          const t = setTimeout(() => ctrl.abort(), 4500);
+          const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/news', { signal: ctrl.signal });
+          clearTimeout(t);
+          if (res.ok) {
+            const payload = await res.json();
+            if (payload && Array.isArray(payload.articles) && payload.articles.length > 0) {
+              proxyNewsSupported = true;
+              const normalized = payload.articles.map(normalizeArticle);
+              mergeLiveArticles(normalized);
+              fetchedCount += normalized.length;
+            }
+          } else if (res.status === 404) {
+            proxyNewsSupported = false;
+          }
+        } catch (_) {
+          proxyNewsSupported = false;
+        }
+      }
+
+      // Tier 2: Localhost Zero-Cache Realtime Headlines (TradingView + Raw XML via corsfix)
+      if (fetchedCount === 0 && window.location && window.location.hostname === 'localhost') {
+        try {
+          const tvRes = await fetch('https://news-headlines.tradingview.com/v2/headlines?category=stock&client=web&lang=en&country=IN');
+          if (tvRes.ok) {
+            const tvJson = await tvRes.json();
+            if (tvJson && Array.isArray(tvJson.items)) {
+              const tvArticles = tvJson.items.slice(0, 20).map(item => {
+                const syms = (item.relatedSymbols || [])
+                  .map(s => (s.symbol || '').replace(/^(NSE|BSE):/, ''))
+                  .filter(s => s && !s.includes(':'))
+                  .slice(0, 3);
+                return normalizeArticle({
+                  id: 'tv-' + item.id,
+                  title: item.title,
+                  description: item.title + (syms.length ? ` • Mentioned stocks: ${syms.join(', ')}` : ''),
+                  link: item.storyPath ? `https://www.tradingview.com${item.storyPath}` : 'https://www.tradingview.com/news/',
+                  pubTimestamp: item.published ? item.published * 1000 : Date.now(),
+                  sourceName: item.source || 'LiveMint',
+                  category: (item.provider === 'mint') ? 'Stocks' : 'Markets',
+                  sourceColor: (item.provider === 'mint') ? '#2E7D32' : '#1565C0',
+                  tickers: syms
+                });
+              });
+              if (tvArticles.length > 0) {
+                mergeLiveArticles(tvArticles);
+                fetchedCount += tvArticles.length;
+                renderNews();
+              }
+            }
+          }
+        } catch (_) {}
+
+        // Also pull raw XML feeds via corsfix on localhost for all 4 categories
+        try {
+          const xmlResults = await Promise.allSettled(
+            NEWS_RSS_CHANNELS.map(async (ch) => {
+              const r = await fetch('https://proxy.corsfix.com/?' + ch.url);
+              if (!r.ok) return [];
+              const txt = await r.text();
+              return parseXmlFeedString(txt, ch);
+            })
+          );
+          const xmlFlat = xmlResults
+            .filter(r => r.status === 'fulfilled' && Array.isArray(r.value))
+            .flatMap(r => r.value);
+          if (xmlFlat.length > 0) {
+            mergeLiveArticles(xmlFlat);
+            fetchedCount += xmlFlat.length;
+          }
+        } catch (_) {}
+      }
+
+      // Tier 3: Universal Origin-Safe Gateway (rss2json) for file://, 127.0.0.1, or production web
+      if (fetchedCount === 0) {
+        // Prioritize active category, then any channel currently missing live articles
+        const countByCat = {};
+        LIVE_NEWS_ARTICLES.filter(a => !a.isSeed).forEach(a => {
+          countByCat[a.category] = (countByCat[a.category] || 0) + 1;
+        });
+        const orderedChannels = [...NEWS_RSS_CHANNELS].sort((a, b) => {
+          if (activeCategory !== 'All' && activeCategory !== 'Saved') {
+            if (a.category === activeCategory && b.category !== activeCategory) return -1;
+            if (b.category === activeCategory && a.category !== activeCategory) return 1;
+          }
+          const aMissing = (countByCat[a.category] || 0) === 0 ? 1 : 0;
+          const bMissing = (countByCat[b.category] || 0) === 0 ? 1 : 0;
+          return bMissing - aMissing;
+        });
+
+        // Fetch 2 rotating feeds per background cycle, or prioritize missing/all on boot/manual click
+        let channelsToFetch;
+        if (!hasLiveFeedLoaded || isManual) {
+          channelsToFetch = orderedChannels;
+        } else {
+          const missing = orderedChannels.filter(c => (countByCat[c.category] || 0) === 0);
+          if (missing.length > 0) {
+            channelsToFetch = missing.slice(0, 2);
+          } else {
+            newsRotationWave = (newsRotationWave + 2) % orderedChannels.length;
+            channelsToFetch = [
+              orderedChannels[newsRotationWave],
+              orderedChannels[(newsRotationWave + 1) % orderedChannels.length]
+            ];
+          }
+        }
+
+        for (let i = 0; i < channelsToFetch.length; i++) {
+          const ch = channelsToFetch[i];
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 950));
+          }
+          const result = await fetchChannelViaRss2Json(ch);
+          if (result.status === 'ok' && result.articles.length > 0) {
+            mergeLiveArticles(result.articles);
+            fetchedCount += result.articles.length;
+            renderNews(); // Progressive immediate update!
+          } else if (result.status === '429' || result.status === 'cooldown') {
+            break; // Respect rate limit cleanly while keeping cached live items
+          }
+        }
+
+        // If still empty after primary channels, try Bing Indian Stock Market Pulse fallback
+        if (fetchedCount === 0 && Date.now() >= rss2jsonCooldownUntil) {
+          const bingRes = await fetchChannelViaRss2Json(BING_INDIA_MARKET_RSS);
+          if (bingRes.status === 'ok' && bingRes.articles.length > 0) {
+            mergeLiveArticles(bingRes.articles);
+            fetchedCount += bingRes.articles.length;
+          }
+        }
+      }
+
+      newsLastSyncTime = new Date();
+      newsSecondsAgo = 0;
+
+      if (isManual && typeof showToast === 'function') {
+        if (fetchedCount > 0) {
+          showToast(`Live Market News synced (${fetchedCount} real-time stories)!`, '\uD83D\uDCE1');
+        } else if (hasLiveFeedLoaded) {
+          showToast('Showing latest synced market headlines (Auto-refresh active)', '\uD83D\uDCE1');
+        }
+      }
+    } catch (err) {
+      console.warn('Live news sync error:', err);
+    } finally {
+      isFetchingNews = false;
+      if (refreshBtn) refreshBtn.classList.remove('spinning');
+      updateNewsTimerUI();
+      renderNews();
+    }
+  }
+
+  function startNewsTickers() {
+    stopNewsTickers();
+    newsSecondsTicker = setInterval(() => {
+      const newsSec = document.getElementById('news-page');
+      if (newsSec && newsSec.style.display !== 'none') {
+        newsSecondsAgo++;
+        newsRelativeRefreshCounter++;
+        updateNewsTimerUI();
+        // Keep article relative timestamps ("5 mins ago") live every 30s
+        if (newsRelativeRefreshCounter >= 30) {
+          newsRelativeRefreshCounter = 0;
+          renderNews();
+        }
+      }
+    }, 1000);
+
+    // Real-time recurring background sync every 60s when News section is visible
+    newsAutoRefreshTimer = setInterval(() => {
+      const newsSec = document.getElementById('news-page');
+      if (newsSec && newsSec.style.display !== 'none' && !isFetchingNews) {
+        fetchLiveMarketNews(false);
+      }
+    }, 60000);
+  }
+
+  function stopNewsTickers() {
+    if (newsSecondsTicker) {
+      clearInterval(newsSecondsTicker);
+      newsSecondsTicker = null;
+    }
+    if (newsAutoRefreshTimer) {
+      clearInterval(newsAutoRefreshTimer);
+      newsAutoRefreshTimer = null;
+    }
+  }
 
   // Bookmarks Storage
   function getBookmarkedIds() {
@@ -4283,12 +4679,14 @@ function initNewsModule() {
     if (activeModalArticle && activeModalArticle.id === id) {
       updateModalBookmarkBtn(id);
     }
-    showToast(added ? 'Article saved to Bookmarks ⭐' : 'Removed from Bookmarks', added ? '⭐' : '🗑');
+    if (typeof showToast === 'function') {
+      showToast(added ? 'Article saved to Bookmarks \u2B50' : 'Removed from Bookmarks', added ? '\u2B50' : '\uD83D\uDDD1\uFE0F');
+    }
   }
 
   function updateModalBookmarkBtn(id) {
     const bookmarked = isBookmarked(id);
-    if (readerBookmarkIcon) readerBookmarkIcon.textContent = bookmarked ? '★' : '⭐';
+    if (readerBookmarkIcon) readerBookmarkIcon.textContent = bookmarked ? '\u2605' : '\u2B50';
     if (readerBookmarkText) readerBookmarkText.textContent = bookmarked ? 'Saved' : 'Bookmark';
     if (readerBookmarkBtn) {
       if (bookmarked) {
@@ -4303,7 +4701,7 @@ function initNewsModule() {
 
   function escapeHtml(str) {
     if (!str) return '';
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   // Render News Feed
@@ -4311,25 +4709,43 @@ function initNewsModule() {
     const bookmarkedIds = getBookmarkedIds();
     if (savedCountEl) savedCountEl.textContent = bookmarkedIds.length;
 
-    // Filter articles
-    let articles = [...MASTER_NEWS_ARTICLES];
+    // Sort strictly newest-first before filtering
+    let articles = [...LIVE_NEWS_ARTICLES].sort((a, b) => (b.pubTimestamp || 0) - (a.pubTimestamp || 0));
 
     if (activeCategory === 'Saved') {
       articles = articles.filter(a => bookmarkedIds.includes(a.id));
     } else if (activeCategory !== 'All') {
-      articles = articles.filter(a => a.category.toLowerCase() === activeCategory.toLowerCase());
+      articles = articles.filter(a => (a.category || '').toLowerCase() === activeCategory.toLowerCase());
     }
 
     if (activeTickerFilter) {
-      articles = articles.filter(a => a.tickers.includes(activeTickerFilter));
+      const aliasMap = {
+        TATAMOTORS: ['tatamotors', 'tata motors', 'tmpv'],
+        HDFCBANK: ['hdfcbank', 'hdfc bank'],
+        RELIANCE: ['reliance', 'ril', 'jio'],
+        INFY: ['infy', 'infosys'],
+        TITAN: ['titan', 'tanishq'],
+        SBIN: ['sbin', 'state bank', 'sbi'],
+        NIFTY: ['nifty', 'nifty 50'],
+        SENSEX: ['sensex'],
+        BANKNIFTY: ['banknifty', 'bank nifty']
+      };
+      const terms = aliasMap[activeTickerFilter] || [activeTickerFilter.toLowerCase()];
+      articles = articles.filter(a =>
+        (a.tickers && a.tickers.includes(activeTickerFilter)) ||
+        terms.some(term =>
+          (a.title || '').toLowerCase().includes(term) ||
+          (a.description || '').toLowerCase().includes(term)
+        )
+      );
     }
 
     if (activeSearchQuery) {
       articles = articles.filter(a =>
-        a.title.toLowerCase().includes(activeSearchQuery) ||
-        a.description.toLowerCase().includes(activeSearchQuery) ||
-        a.sourceName.toLowerCase().includes(activeSearchQuery) ||
-        a.tickers.some(t => t.toLowerCase().includes(activeSearchQuery))
+        (a.title || '').toLowerCase().includes(activeSearchQuery) ||
+        (a.description || '').toLowerCase().includes(activeSearchQuery) ||
+        (a.sourceName || '').toLowerCase().includes(activeSearchQuery) ||
+        (a.tickers || []).some(t => t.toLowerCase().includes(activeSearchQuery))
       );
     }
 
@@ -4346,12 +4762,13 @@ function initNewsModule() {
     const nPct = totalCount > 0 ? Math.round((neutral / totalCount) * 100) : 0;
     const brPct = totalCount > 0 ? Math.round((bearish / totalCount) * 100) : 0;
 
-    if (sentimentBullishEl) sentimentBullishEl.textContent = `🟢 Bullish (${bPct}% • ${bullish})`;
-    if (sentimentNeutralEl) sentimentNeutralEl.textContent = `🟠 Neutral (${nPct}% • ${neutral})`;
-    if (sentimentBearishEl) sentimentBearishEl.textContent = `🔴 Caution (${brPct}% • ${bearish})`;
+    if (sentimentBullishEl) sentimentBullishEl.textContent = `\uD83D\uDFE2 Bullish (${bPct}% \u2022 ${bullish})`;
+    if (sentimentNeutralEl) sentimentNeutralEl.textContent = `\uD83D\uDFE0 Neutral (${nPct}% \u2022 ${neutral})`;
+    if (sentimentBearishEl) sentimentBearishEl.textContent = `\uD83D\uDD34 Caution (${brPct}% \u2022 ${bearish})`;
 
     if (articleCountPill) {
-      articleCountPill.textContent = `${totalCount} ${totalCount === 1 ? 'article' : 'articles'} • Indian Equities`;
+      const modeLabel = hasLiveFeedLoaded ? 'Live Wire' : 'Syncing Feeds';
+      articleCountPill.textContent = `${totalCount} ${totalCount === 1 ? 'article' : 'articles'} \u2022 ${modeLabel}`;
     }
 
     // Check empty state
@@ -4367,56 +4784,53 @@ function initNewsModule() {
     if (newsGrid) {
       newsGrid.innerHTML = articles.map(article => {
         const bookmarked = bookmarkedIds.includes(article.id);
-        const sourceBg = `${article.sourceColor}1F`; // ~12% alpha
+        const sourceBg = `${article.sourceColor}1F`;
+        const relTime = formatRelativeNewsTime(article.pubTimestamp);
 
-        let sentimentIcon = '🟢';
+        let sentimentIcon = '\uD83D\uDFE2';
         let sentimentClass = 'bullish';
         if (article.sentiment === 'neutral') {
-          sentimentIcon = '🟠';
+          sentimentIcon = '\uD83D\uDFE0';
           sentimentClass = 'neutral';
         } else if (article.sentiment === 'bearish') {
-          sentimentIcon = '🔴';
+          sentimentIcon = '\uD83D\uDD34';
           sentimentClass = 'bearish';
         }
 
-        const tickersHtml = article.tickers.map(t =>
-          `<span class="news-ticker-pill" data-action="filter-ticker" data-ticker="${t}">#${t}</span>`
+        const tickersHtml = (article.tickers || []).map(t =>
+          `<span class="news-ticker-pill" data-action="filter-ticker" data-ticker="${escapeHtml(t)}">#${escapeHtml(t)}</span>`
         ).join(' ');
 
         return `
-          <div class="news-card" data-id="${article.id}">
-            <!-- Header Row: Source Badge & Relative Time -->
+          <div class="news-card" data-id="${escapeHtml(article.id)}">
             <div class="news-card-header">
               <span class="news-card-source-badge" style="background:${sourceBg}; color:${article.sourceColor};">
-                ${article.sourceName}
+                ${escapeHtml(article.sourceName)}
               </span>
-              <span class="news-card-time">${article.pubDate}</span>
+              <span class="news-card-time">${escapeHtml(relTime)}</span>
             </div>
 
-            <!-- Title & Description -->
-            <div data-action="open-modal" data-id="${article.id}">
+            <div data-action="open-modal" data-id="${escapeHtml(article.id)}">
               <div class="news-card-title">${escapeHtml(article.title)}</div>
               <div class="news-card-desc">${escapeHtml(article.description)}</div>
             </div>
 
-            <!-- Tags Row: Sentiment & Tickers -->
             <div class="news-card-tags-row">
               <span class="sentiment-badge ${sentimentClass}">
-                ${sentimentIcon} ${article.impact}
+                ${sentimentIcon} ${escapeHtml(article.impact)}
               </span>
               ${tickersHtml}
             </div>
 
-            <!-- Footer: Quick Read, Bookmark & Share -->
             <div class="news-card-footer">
-              <span class="news-card-read-link" data-action="open-modal" data-id="${article.id}">
+              <span class="news-card-read-link" data-action="open-modal" data-id="${escapeHtml(article.id)}">
                 Quick View &amp; Analysis &rarr;
               </span>
               <div class="news-card-actions">
-                <button type="button" class="news-icon-btn ${bookmarked ? 'bookmarked' : ''}" data-action="bookmark" data-id="${article.id}" title="${bookmarked ? 'Remove Bookmark' : 'Bookmark Story'}">
-                  ${bookmarked ? '★' : '☆'}
+                <button type="button" class="news-icon-btn ${bookmarked ? 'bookmarked' : ''}" data-action="bookmark" data-id="${escapeHtml(article.id)}" title="${bookmarked ? 'Remove Bookmark' : 'Bookmark Story'}">
+                  ${bookmarked ? '\u2605' : '\u2606'}
                 </button>
-                <a href="${article.link}" target="_blank" rel="noopener noreferrer" class="news-icon-btn" title="Open Original Publisher Source" onclick="event.stopPropagation();">
+                <a href="${escapeHtml(article.link)}" target="_blank" rel="noopener noreferrer" class="news-icon-btn" title="Open Original Publisher Source" onclick="event.stopPropagation();">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 </a>
               </div>
@@ -4428,10 +4842,9 @@ function initNewsModule() {
       // Wire up card interactions
       newsGrid.querySelectorAll('.news-card').forEach(card => {
         const id = card.getAttribute('data-id');
-        const article = MASTER_NEWS_ARTICLES.find(a => a.id === id);
+        const article = LIVE_NEWS_ARTICLES.find(a => a.id === id);
 
         card.addEventListener('click', (e) => {
-          // Check if clicked on bookmark or ticker filter
           const target = e.target.closest('[data-action]');
           if (target) {
             const action = target.getAttribute('data-action');
@@ -4463,7 +4876,9 @@ function initNewsModule() {
         if (c.getAttribute('data-ticker') === ticker) c.classList.add('active');
         else c.classList.remove('active');
       });
-      showToast(`Filtered stories mentioning ${ticker}`, '🔍');
+      if (typeof showToast === 'function') {
+        showToast(`Filtered stories mentioning ${ticker}`, '\uD83D\uDD0D');
+      }
     }
     renderNews();
   }
@@ -4483,6 +4898,11 @@ function initNewsModule() {
       chip.classList.add('active');
       activeCategory = chip.getAttribute('data-category');
       renderNews();
+      // If category has fewer than 5 live items, fetch that channel immediately if eligible
+      const catLiveCount = LIVE_NEWS_ARTICLES.filter(a => !a.isSeed && (activeCategory === 'All' || a.category === activeCategory)).length;
+      if (activeCategory !== 'All' && activeCategory !== 'Saved' && catLiveCount < 5 && !isFetchingNews) {
+        fetchLiveMarketNews(false);
+      }
     });
   });
 
@@ -4529,24 +4949,24 @@ function initNewsModule() {
       readerSourceBadge.style.background = `${article.sourceColor}22`;
       readerSourceBadge.style.color = article.sourceColor;
     }
-    if (readerTime) readerTime.textContent = article.pubDate;
+    if (readerTime) readerTime.textContent = formatRelativeNewsTime(article.pubTimestamp);
     if (readerTitle) readerTitle.textContent = article.title;
     if (readerDesc) readerDesc.textContent = article.description;
     if (readerContext) readerContext.textContent = article.context;
     if (readerSourceLink) readerSourceLink.href = article.link;
 
     if (readerSentimentBadge) {
-      let icon = '🟢';
+      let icon = '\uD83D\uDFE2';
       let cls = 'bullish';
-      if (article.sentiment === 'neutral') { icon = '🟠'; cls = 'neutral'; }
-      else if (article.sentiment === 'bearish') { icon = '🔴'; cls = 'bearish'; }
+      if (article.sentiment === 'neutral') { icon = '\uD83D\uDFE0'; cls = 'neutral'; }
+      else if (article.sentiment === 'bearish') { icon = '\uD83D\uDD34'; cls = 'bearish'; }
       readerSentimentBadge.className = `sentiment-badge ${cls}`;
       readerSentimentBadge.textContent = `${icon} ${article.impact}`;
     }
 
     if (readerTickers) {
-      readerTickers.innerHTML = article.tickers.map(t =>
-        `<span class="news-ticker-pill" style="font-size:0.75rem;">$${t}</span>`
+      readerTickers.innerHTML = (article.tickers || []).map(t =>
+        `<span class="news-ticker-pill" style="font-size:0.75rem;">$${escapeHtml(t)}</span>`
       ).join(' ');
     }
 
@@ -4561,6 +4981,11 @@ function initNewsModule() {
   };
 
   if (closeReaderBtn) closeReaderBtn.addEventListener('click', closeReaderModal);
+  if (newsReaderModal) {
+    newsReaderModal.addEventListener('click', (e) => {
+      if (e.target === newsReaderModal) closeReaderModal();
+    });
+  }
 
   if (readerBookmarkBtn) {
     readerBookmarkBtn.addEventListener('click', () => {
@@ -4570,34 +4995,36 @@ function initNewsModule() {
     });
   }
 
-  // Live Refresh Action (Matching NewsScreen.kt Refresh Button)
+  // Live Refresh Button Action (Pulls fresh real-time headlines immediately)
   if (refreshBtn) {
     refreshBtn.addEventListener('click', () => {
-      refreshBtn.classList.add('spinning');
-      if (updateTimerEl) updateTimerEl.textContent = 'Updating live RSS feeds...';
-
-      setTimeout(() => {
-        refreshBtn.classList.remove('spinning');
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-        if (updateTimerEl) updateTimerEl.textContent = `Updated at ${timeStr} • Live`;
-        showToast('Indian Financial news channels refreshed!', '📡');
-        renderNews();
-      }, 750);
+      fetchLiveMarketNews(true);
+      startNewsTickers();
     });
   }
 
-  // Set today's date in header
-  if (liveDateEl) {
-    const today = new Date();
-    liveDateEl.textContent = today.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-  }
-
-  // Export module render for switchAuthTab
-  window.renderNewsModule = renderNews;
+  // Export module render & live refresh hooks for switchAuthTab and external testing
+  window.fetchLiveMarketNews = fetchLiveMarketNews;
+  window.renderNewsModule = () => {
+    renderNews();
+    startNewsTickers();
+    updateNewsTimerUI();
+    if (!hasLiveFeedLoaded || !newsLastSyncTime || (Date.now() - newsLastSyncTime.getTime() > 60000)) {
+      fetchLiveMarketNews(false);
+    }
+  };
 
   // Boot News Module
+  loadCachedNews();
   renderNews();
+  updateNewsTimerUI();
+  startNewsTickers();
+  // Kick off background live sync shortly after boot if cache stale or seed-only
+  if (!hasLiveFeedLoaded || !newsLastSyncTime || (Date.now() - newsLastSyncTime.getTime() > 90000)) {
+    setTimeout(() => {
+      fetchLiveMarketNews(false);
+    }, 600);
+  }
 }
 
 /* ==========================================================================
