@@ -79,6 +79,8 @@ async function syncUserToFirestore(userObj) {
       fullName: userObj.fullName || '',
       username: userObj.username || '',
       email: userObj.email || '',
+      phone: userObj.phone || '',
+      alertChannel: userObj.alertChannel || 'email',
       photoURL: userObj.photoURL || null,
       provider: userObj.provider || 'local',
       plan: userObj.plan || 'free_trial',
@@ -144,6 +146,8 @@ async function tradeNitiGoogleSignIn() {
         fullName: user.displayName || firestoreData.fullName || 'Google Trader',
         username: (user.email || 'trader').split('@')[0],
         email: user.email,
+        phone: firestoreData.phone || '',
+        alertChannel: firestoreData.alertChannel || 'email',
         photoURL: user.photoURL || firestoreData.photoURL || null,
         provider: 'google',
         initial: (user.displayName || user.email || 'G').charAt(0).toUpperCase(),
@@ -261,6 +265,8 @@ async function tradeNitiLoginWithEmail(email, password) {
         fullName: user.displayName || firestoreData.fullName || email.split('@')[0],
         username: email.split('@')[0],
         email: user.email,
+        phone: firestoreData.phone || '',
+        alertChannel: firestoreData.alertChannel || 'email',
         photoURL: user.photoURL || firestoreData.photoURL || null,
         provider: 'firebase_email',
         initial: (user.displayName || email).charAt(0).toUpperCase(),
@@ -301,6 +307,45 @@ async function tradeNitiSignOut() {
   }
 }
 
+/**
+ * 8. Sync SMC MTR Alert Rule directly to Cloud Firestore (for background server notifications)
+ */
+async function syncSmcAlertToFirestore(alertPayload) {
+  if (!firebaseInitialized || !dbInstance || !alertPayload || !alertPayload.symbol) return false;
+  try {
+    const currentUser = authInstance ? authInstance.currentUser : null;
+    const uid = (currentUser && currentUser.uid) || alertPayload.uid || 'guest';
+    const docId = `${uid}_${alertPayload.symbol.toUpperCase()}`;
+    await dbInstance.collection('smc_alerts').doc(docId).set({
+      docId,
+      uid,
+      userName: alertPayload.userName || 'Trader',
+      email: alertPayload.email || '',
+      phone: alertPayload.phone || '',
+      channel: alertPayload.channel || 'email',
+      symbol: alertPayload.symbol.toUpperCase(),
+      targetAnalysisPct: Number(alertPayload.targetAnalysisPct) || 70,
+      isMonitored: Boolean(alertPayload.isMonitored),
+      lastConfluence: Number(alertPayload.currentConfluence) || 0,
+      lastPrice: Number(alertPayload.currentPrice) || 0,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    return true;
+  } catch (e) {
+    console.warn('Firestore SMC alert sync note:', e.message);
+    return false;
+  }
+}
+
+async function getFirebaseIdToken() {
+  try {
+    if (firebaseInitialized && authInstance && authInstance.currentUser) {
+      return await authInstance.currentUser.getIdToken();
+    }
+  } catch (_) {}
+  return null;
+}
+
 // Export to window
 window.tradeNitiFirebase = {
   config: tradeNitiFirebaseConfig,
@@ -309,6 +354,8 @@ window.tradeNitiFirebase = {
   registerEmail: tradeNitiRegisterWithEmail,
   loginEmail: tradeNitiLoginWithEmail,
   syncUser: syncUserToFirestore,
+  syncSmcAlert: syncSmcAlertToFirestore,
+  getIdToken: getFirebaseIdToken,
   signOut: tradeNitiSignOut,
   isLive: () => firebaseInitialized,
   get auth() { return authInstance; },

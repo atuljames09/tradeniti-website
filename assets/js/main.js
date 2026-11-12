@@ -1264,6 +1264,8 @@ function initAuth() {
       const fullName = regFullName.value.trim();
       const username = regUsername.value.trim().toLowerCase();
       const email = regEmail.value.trim().toLowerCase();
+      const regPhoneEl = document.getElementById('regPhone');
+      const phone = regPhoneEl ? regPhoneEl.value.trim() : '';
       const password = regPassword.value;
       const confirmPass = regConfirmPassword.value;
 
@@ -1314,10 +1316,17 @@ function initAuth() {
       const colors = ['#2563EB', '#059669', '#7C3AED', '#EA580C', '#0D9488'];
       const avatarColor = colors[Math.floor(Math.random() * colors.length)];
 
+      if (firebaseUser) {
+        firebaseUser.phone = phone || firebaseUser.phone || '';
+        firebaseUser.alertChannel = phone ? 'both' : (firebaseUser.alertChannel || 'email');
+      }
+
       const newUser = firebaseUser || {
         fullName,
         username,
         email,
+        phone,
+        alertChannel: phone ? 'both' : 'email',
         password,
         provider: 'local',
         initial: fullName.charAt(0).toUpperCase() || username.charAt(0).toUpperCase(),
@@ -1327,7 +1336,11 @@ function initAuth() {
         planExpires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
       };
 
-      users.push({ fullName, username, email, password, provider: newUser.provider });
+      if (firebaseUser && window.tradeNitiFirebase && typeof window.tradeNitiFirebase.syncUser === 'function') {
+        window.tradeNitiFirebase.syncUser(newUser);
+      }
+
+      users.push({ fullName, username, email, phone, alertChannel: newUser.alertChannel, password, provider: newUser.provider });
       localStorage.setItem(DEFAULT_USERS_KEY, JSON.stringify(users));
 
       showBanner(regSuccessBanner, 'Account registered successfully! Signing you in...', false);
@@ -3521,11 +3534,21 @@ function initSmcModule() {
   const btnSaveMtr = document.getElementById('btnSaveMtr');
   const btnDisableMtr = document.getElementById('btnDisableMtr');
 
+  // MTR Alert Delivery Controls
+  const mtrChannelBtns = document.querySelectorAll('.mtr-channel-pill');
+  const mtrContactEmailSummary = document.getElementById('mtrContactEmailSummary');
+  const mtrPhoneInput = document.getElementById('mtrPhoneInput');
+  const mtrDeliveryStatusBadge = document.getElementById('mtrDeliveryStatusBadge');
+  const mtrCloudHintText = document.getElementById('mtrCloudHintText');
+
   // State
   let activeFilter = 'all';
   let filterQuery = '';
   let activeMtrSymbol = null;
   let activeMtrSliderVal = 75;
+  let activeMtrChannel = 'email';
+  let cloudSmcApiSupported = null; // null = untested, true = /api/smc-alerts deployed, false = 404
+  let cloudSmcCapabilities = { emailConfigured: false, smsConfigured: false, storageConfigured: false };
 
   // Live Sync & MTR Surveillance State
   let smcLastSyncTime = null;
@@ -3595,6 +3618,97 @@ function initSmcModule() {
     smcUpdateTimerEl.innerHTML = `Updated ${agoStr} (${timeStr}) &bull; <span style="color:var(--brand-blue); font-weight:700;">auto-refresh 30s</span>`;
   }
 
+  // Sound chime + OS Desktop Notification when browser tab is active
+  function fireBrowserSmcNotification(symbol, currPct, targetPct, price) {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.14);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.36);
+      }
+    } catch (_) {}
+
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification(`Trade Niti SMC Alert: ${symbol}`, {
+          body: `${symbol} Confluence reached ${currPct}% (Target: ${targetPct}% \u00B13%, LTP \u20B9${Number(price || 0).toFixed(2)})`
+        });
+      }
+    } catch (_) {}
+  }
+
+  // Sync MTR Rule & Dispatch Cloud Email / SMS via Firestore + Vercel /api/smc-alerts
+  async function syncSmcAlertToCloud(entry, stock, action = 'upsert') {
+    const user = (typeof window.getCurrentUser === 'function') ? window.getCurrentUser() : null;
+    if (!user || !entry || !entry.symbol) return { synced: false, reason: 'no_user' };
+
+    const channel = entry.notifyChannel || user.alertChannel || 'email';
+    let idToken = null;
+    if (window.tradeNitiFirebase && typeof window.tradeNitiFirebase.getIdToken === 'function') {
+      idToken = await window.tradeNitiFirebase.getIdToken();
+    }
+
+    const payload = {
+      action,
+      uid: user.uid || (user.email ? 'local_' + user.email.toLowerCase().replace(/[^a-z0-9]/g, '_') : user.username || 'trader'),
+      idToken,
+      userName: user.fullName || user.username || 'Trader',
+      email: user.email || '',
+      phone: user.phone || '',
+      channel,
+      symbol: entry.symbol,
+      targetAnalysisPct: entry.targetAnalysisPct || 70,
+      isMonitored: Boolean(entry.isMonitored) && action !== 'delete',
+      currentConfluence: (stock && stock.confluence) || 65,
+      currentPrice: (stock && stock.price) || 0
+    };
+
+    // 1. Direct Cloud Firestore sync (for authenticated Firebase accounts)
+    let firestoreOk = false;
+    if (window.tradeNitiFirebase && typeof window.tradeNitiFirebase.syncSmcAlert === 'function') {
+      firestoreOk = await window.tradeNitiFirebase.syncSmcAlert(payload);
+    }
+
+    // 2. Vercel Cloud Alert Endpoint (/api/smc-alerts) for off-browser Email & SMS dispatch
+    if (cloudSmcApiSupported === false) {
+      return { synced: firestoreOk, apiAvailable: false };
+    }
+
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 5000);
+      const res = await fetch('https://swingtrader-nse-proxy.vercel.app/api/smc-alerts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: ctrl.signal
+      });
+      clearTimeout(t);
+      if (res.status === 404) {
+        cloudSmcApiSupported = false;
+        return { synced: firestoreOk, apiAvailable: false };
+      }
+      if (res.ok) {
+        const data = await res.json();
+        cloudSmcApiSupported = true;
+        if (data && data.capabilities) cloudSmcCapabilities = data.capabilities;
+        return { synced: true, apiAvailable: true, response: data };
+      }
+    } catch (_) {}
+
+    return { synced: firestoreOk, apiAvailable: cloudSmcApiSupported === true };
+  }
+
   // Evaluate MTR ±3% Target Alerts (Matching SmcViewModel.kt lines 138-153)
   function evaluateMtrAlerts(entries, suppressToast = false) {
     entries.forEach(entry => {
@@ -3607,8 +3721,12 @@ function initSmcModule() {
       if (diff <= 3) {
         if (!smcNotifiedSymbols.has(entry.symbol)) {
           smcNotifiedSymbols.add(entry.symbol);
-          if (!suppressToast && typeof showToast === 'function') {
-            showToast(`\u26A1 MTR Target Alert: ${entry.symbol} reached ${currPct}% (Target: ${targetPct}% \u00B13%)!`, '\u26A1');
+          if (!suppressToast) {
+            if (typeof showToast === 'function') {
+              showToast(`\u26A1 MTR Target Alert: ${entry.symbol} reached ${currPct}% (Target: ${targetPct}% \u00B13%)!`, '\u26A1');
+            }
+            fireBrowserSmcNotification(entry.symbol, currPct, targetPct, stock.price);
+            syncSmcAlertToCloud(entry, stock, 'trigger_instant');
           }
         }
       } else if (diff > 5) {
@@ -4004,8 +4122,10 @@ function initSmcModule() {
   // Remove Stock from SMC
   function removeSmcStock(symbol) {
     let entries = getSmcEntries();
+    const removed = entries.find(e => e.symbol.toUpperCase() === symbol.toUpperCase());
     entries = entries.filter(e => e.symbol.toUpperCase() !== symbol.toUpperCase());
     saveSmcEntries(entries);
+    if (removed) syncSmcAlertToCloud({ ...removed, isMonitored: false }, resolveSmcStock(symbol), 'delete');
     renderSmc();
     if (window.renderActiveWatchlist) window.renderActiveWatchlist();
     if (typeof showToast === 'function') {
@@ -4148,8 +4268,30 @@ function initSmcModule() {
     if (mtrSlider) mtrSlider.value = activeMtrSliderVal;
     updateMtrBigBadge(activeMtrSliderVal);
 
+    // Populate Account Email / Mobile & Alert Channel
+    const user = (typeof window.getCurrentUser === 'function') ? window.getCurrentUser() : null;
+    if (mtrContactEmailSummary) mtrContactEmailSummary.textContent = (user && user.email) ? user.email : 'Not signed in';
+    if (mtrPhoneInput) mtrPhoneInput.value = (user && user.phone) ? user.phone : '';
+    activeMtrChannel = entry.notifyChannel || (user && user.alertChannel) || 'email';
+    mtrChannelBtns.forEach(btn => {
+      const ch = btn.getAttribute('data-channel');
+      if (ch === activeMtrChannel) btn.classList.add('active');
+      else btn.classList.remove('active');
+    });
+    if (mtrDeliveryStatusBadge) {
+      mtrDeliveryStatusBadge.textContent = (user && user.phone) ? 'Email + Mobile Linked' : 'Email Linked';
+    }
+
     if (mtrModal) mtrModal.classList.add('active');
   }
+
+  mtrChannelBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeMtrChannel = btn.getAttribute('data-channel') || 'email';
+      mtrChannelBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
 
   if (mtrSlider) {
     mtrSlider.addEventListener('input', (e) => {
@@ -4180,21 +4322,59 @@ function initSmcModule() {
   }
 
   if (btnSaveMtr) {
-    btnSaveMtr.addEventListener('click', () => {
+    btnSaveMtr.addEventListener('click', async () => {
       if (!activeMtrSymbol) return;
+      const symToSave = activeMtrSymbol;
+      const user = (typeof window.getCurrentUser === 'function') ? window.getCurrentUser() : null;
+      const phoneVal = mtrPhoneInput ? mtrPhoneInput.value.trim() : ((user && user.phone) || '');
+
+      if ((activeMtrChannel === 'sms' || activeMtrChannel === 'both') && phoneVal.replace(/[^0-9]/g, '').length < 10) {
+        if (typeof showToast === 'function') {
+          showToast('Please enter a valid 10-digit mobile number for SMS alerts.', '\u26A0\uFE0F');
+        }
+        if (mtrPhoneInput) mtrPhoneInput.focus();
+        return;
+      }
+
+      // Persist updated phone & preferred channel onto User Account
+      if (user && typeof window.setCurrentUser === 'function') {
+        user.phone = phoneVal;
+        user.alertChannel = activeMtrChannel;
+        window.setCurrentUser(user);
+      }
+
+      // Request browser OS desktop notification permission gently
+      try {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().catch(() => {});
+        }
+      } catch (_) {}
+
       const entries = getSmcEntries();
-      const entry = entries.find(e => e.symbol.toUpperCase() === activeMtrSymbol.toUpperCase());
+      const entry = entries.find(e => e.symbol.toUpperCase() === symToSave.toUpperCase());
       if (entry) {
         entry.isMonitored = true;
         entry.targetAnalysisPct = activeMtrSliderVal;
+        entry.notifyChannel = activeMtrChannel;
         saveSmcEntries(entries);
         smcNotifiedSymbols.delete(entry.symbol);
+
+        const stock = resolveSmcStock(symToSave);
+        const targetLabel = activeMtrChannel === 'both'
+          ? `Email & SMS`
+          : (activeMtrChannel === 'sms' ? `SMS (${phoneVal})` : `Email (${(user && user.email) || 'account'})`);
+
         if (typeof showToast === 'function') {
-          showToast(`MTR Alert active for ${activeMtrSymbol} at ${activeMtrSliderVal}%!`, '\u26A1');
+          showToast(`MTR Alert ON for ${symToSave} at ${activeMtrSliderVal}% via ${targetLabel}!`, '\u26A1');
         }
+
         closeMtrModal();
         evaluateMtrAlerts(entries, false);
         renderSmc();
+
+        // Register in Cloud Backend + send confirmation if target not already hit instantaneously
+        const diff = Math.abs((stock.confluence || 50) - activeMtrSliderVal);
+        syncSmcAlertToCloud(entry, stock, diff <= 3 ? 'trigger_instant' : 'send_confirmation');
       }
     });
   }
@@ -4208,6 +4388,7 @@ function initSmcModule() {
         entry.isMonitored = false;
         saveSmcEntries(entries);
         smcNotifiedSymbols.delete(entry.symbol);
+        syncSmcAlertToCloud(entry, resolveSmcStock(activeMtrSymbol), 'delete');
         if (typeof showToast === 'function') {
           showToast(`MTR Alert turned OFF for ${activeMtrSymbol}`, '\u2139\uFE0F');
         }

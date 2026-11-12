@@ -484,6 +484,43 @@ function openUserAccountModal() {
     appDownloadRow.style.display = sub.hasAppAccess ? 'block' : 'none';
   }
 
+  // Populate & Wire Alert Contact Settings (Email & Mobile for SMC Background Alerts)
+  const alertEmailInput = document.getElementById('uamAlertEmail');
+  const alertPhoneInput = document.getElementById('uamAlertPhone');
+  const alertChannelSelect = document.getElementById('uamAlertChannel');
+  const saveAlertContactBtn = document.getElementById('btnSaveAlertContact');
+
+  if (alertEmailInput) alertEmailInput.value = user.email || '';
+  if (alertPhoneInput) alertPhoneInput.value = user.phone || '';
+  if (alertChannelSelect) alertChannelSelect.value = user.alertChannel || 'email';
+
+  if (saveAlertContactBtn) {
+    saveAlertContactBtn.onclick = () => {
+      const updatedUser = (typeof window.getCurrentUser === 'function') ? window.getCurrentUser() : user;
+      if (!updatedUser) return;
+      const newEmail = alertEmailInput ? alertEmailInput.value.trim() : (updatedUser.email || '');
+      const newPhone = alertPhoneInput ? alertPhoneInput.value.trim() : (updatedUser.phone || '');
+      const newCh = alertChannelSelect ? alertChannelSelect.value : (updatedUser.alertChannel || 'email');
+
+      if ((newCh === 'sms' || newCh === 'both') && newPhone.replace(/[^0-9]/g, '').length < 10) {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Please enter a valid 10-digit mobile number for SMS alerts.', '\u26A0\uFE0F');
+        }
+        return;
+      }
+
+      updatedUser.email = newEmail || updatedUser.email;
+      updatedUser.phone = newPhone;
+      updatedUser.alertChannel = newCh;
+
+      if (typeof window.setCurrentUser === 'function') window.setCurrentUser(updatedUser);
+      if (emailEl) emailEl.textContent = updatedUser.email || 'Trader';
+      if (typeof window.showToast === 'function') {
+        window.showToast('SMC Alert Contact (Email / Mobile) saved to account!', '\u2705');
+      }
+    };
+  }
+
   // Wire interactive plan switch testing buttons
   modal.querySelectorAll('.btn-switch-test-plan').forEach(btn => {
     btn.onclick = () => {
