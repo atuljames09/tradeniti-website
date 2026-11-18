@@ -6039,6 +6039,44 @@ body.dark-theme .fiidii-stat-tag {
   padding: 5px 8px;
 }
 
+.screener-data-table th.col-oi,
+.screener-data-table td.col-oi {
+  width: 100px;
+  min-width: 100px;
+  text-align: right;
+  padding: 5px 8px;
+}
+
+.screener-data-table th.col-oi-change,
+.screener-data-table td.col-oi-change {
+  width: 110px;
+  min-width: 110px;
+  text-align: right;
+  padding: 5px 8px;
+}
+
+.oi-buildup-tag {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 750;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  vertical-align: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.oi-tag-lb { background: rgba(16, 185, 129, 0.16); color: #10B981; }
+.oi-tag-sb { background: rgba(239, 68, 68, 0.16); color: #EF4444; }
+.oi-tag-sc { background: rgba(59, 130, 246, 0.16); color: #3B82F6; }
+.oi-tag-lu { background: rgba(245, 158, 11, 0.16); color: #F59E0B; }
+.oi-cash-pill {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  opacity: 0.65;
+  font-style: normal;
+}
+
 .screener-data-table th.col-analysis,
 .screener-data-table td.col-analysis {
   width: 85px;
