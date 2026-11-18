@@ -6769,10 +6769,10 @@ function initScreenerModalModule() {
         <tr data-stock-symbol="${stock.symbol}" title="Click to view detailed analysis for ${stock.symbol}">
           <!-- Col 1: FROZEN Stock Name -->
           <td class="col-frozen">
-            <div style="font-weight: 750; font-size: 0.92rem; color: var(--text-primary); line-height: 1.25;">
+            <div style="font-weight: 800; font-size: 0.96rem; color: var(--text-primary); line-height: 1.25;">
               ${stock.symbol}
             </div>
-            <div style="font-size: 0.74rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 145px; margin-top: 1px;">
+            <div style="font-size: 0.76rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; margin-top: 1px;">
               ${stock.name}
             </div>
           </td>
