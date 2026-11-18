@@ -1346,6 +1346,8 @@
                 <th data-sort="change">CHANGE %</th>
                 <th data-sort="high52">52W HIGH</th>
                 <th data-sort="low52">52W LOW</th>
+                <th data-sort="oiPct" title="Open Interest % (F&O Contracts)">OPEN INTEREST %</th>
+                <th data-sort="oiChangePct" title="Change in Open Interest %">OI CHANGE %</th>
                 <th data-sort="analysisPct">ANALYSIS %</th>
               </tr>
             </thead>
@@ -2472,7 +2474,7 @@
         <span class="screener-frozen-hint">📌 Stock Name Frozen &bull; Scroll / Swipe ↔</span>
       </div>
 
-      <!-- 6-Column Data Table Container with Frozen Col 1 -->
+      <!-- 8-Column Data Table Container with Frozen Col 1 (Includes Open Interest % & OI Change %) -->
       <div class="screener-table-wrapper" id="screenerTableWrapper">
         <table class="screener-data-table" id="screenerDataTable">
           <thead>
@@ -2512,7 +2514,21 @@
                   <span class="sort-arrow" id="sortArrowLOW_52"></span>
                 </div>
               </th>
-              <!-- Col 6: Technical Analysis % (85px, Default Sort) -->
+              <!-- Col 6: Open Interest % (95px) -->
+              <th class="col-oi" data-sort-key="OI_PCT" title="Sort by Open Interest % (F&O Contracts)">
+                <div class="th-content align-end">
+                  <span>Open Interest %</span>
+                  <span class="sort-arrow" id="sortArrowOI_PCT"></span>
+                </div>
+              </th>
+              <!-- Col 7: OI Change % (105px) -->
+              <th class="col-oi-change" data-sort-key="OI_CHANGE" title="Sort by OI Change % (Long/Short Buildup)">
+                <div class="th-content align-end">
+                  <span>OI Change %</span>
+                  <span class="sort-arrow" id="sortArrowOI_CHANGE"></span>
+                </div>
+              </th>
+              <!-- Col 8: Technical Analysis % (85px, Default Sort) -->
               <th class="col-analysis" data-sort-key="ANALYSIS_PCT" title="Sort by Confluence %">
                 <div class="th-content align-center">
                   <span>Analysis %</span>
