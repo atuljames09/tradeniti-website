@@ -5709,13 +5709,34 @@ body.dark-theme .fiidii-stat-tag {
    6. Market Screener Modal & Frozen Table Styles (StockScreenerScreen.kt - Ultra Compact & Sophisticated)
    ========================================================================== */
 .screener-modal-dialog {
-  max-width: 980px;
-  width: 95vw;
-  max-height: 92vh;
+  width: 98vw;
+  max-width: 98vw;
+  height: 96vh;
+  max-height: 96vh;
+  margin: 2vh auto;
   display: flex;
   flex-direction: column;
-  padding: 14px 18px;
-  border-radius: 12px;
+  padding: 16px 24px;
+  border-radius: 14px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.75), 0 0 0 1px var(--border-subtle);
+}
+
+.screener-modal-dialog .screener-table-wrapper {
+  flex: 1;
+  max-height: none;
+  height: calc(100% - 130px);
+  min-height: 440px;
+  overflow: auto;
+}
+
+#screener .container {
+  max-width: 98vw;
+  width: 98vw;
+  padding: 0 16px;
+}
+
+#screener .screener-table-wrapper {
+  max-height: 640px;
 }
 
 .screener-modal-header {
@@ -5976,16 +5997,16 @@ body.dark-theme .fiidii-stat-tag {
   font-weight: 900;
 }
 
-/* Col 1 Frozen: 160px Sticky */
+/* Col 1 Frozen: 220px Sticky (Full Screen Expanded) */
 .screener-data-table th.col-frozen {
   position: sticky;
   left: 0;
   top: 0;
   z-index: 4;
   background: var(--surface-chip);
-  width: 160px;
-  min-width: 160px;
-  max-width: 160px;
+  width: 220px;
+  min-width: 200px;
+  max-width: 260px;
   border-right: 1px solid var(--border-subtle);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
 }
@@ -5995,12 +6016,12 @@ body.dark-theme .fiidii-stat-tag {
   left: 0;
   z-index: 3;
   background: var(--surface-card);
-  width: 160px;
-  min-width: 160px;
-  max-width: 160px;
+  width: 220px;
+  min-width: 200px;
+  max-width: 260px;
   border-right: 1px solid var(--border-subtle);
   box-shadow: 2px 0 4px rgba(0, 0, 0, 0.04);
-  padding: 5px 8px;
+  padding: 8px 12px;
 }
 
 .screener-data-table tbody tr:hover td.col-frozen {
@@ -6009,50 +6030,66 @@ body.dark-theme .fiidii-stat-tag {
 
 .screener-data-table th.col-price,
 .screener-data-table td.col-price {
-  width: 95px;
-  min-width: 95px;
+  width: 120px;
+  min-width: 110px;
   text-align: right;
-  padding: 5px 8px;
+  padding: 8px 12px;
 }
 
 .screener-data-table th.col-change,
 .screener-data-table td.col-change {
-  width: 85px;
-  min-width: 85px;
+  width: 105px;
+  min-width: 95px;
   text-align: right;
-  padding: 5px 8px;
+  padding: 8px 12px;
+}
+
+.screener-data-table th.col-ltp,
+.screener-data-table td.col-ltp {
+  width: 115px;
+  min-width: 105px;
+  text-align: right;
+  padding: 8px 12px;
 }
 
 .screener-data-table th.col-high,
 .screener-data-table td.col-high {
-  width: 90px;
-  min-width: 90px;
+  width: 115px;
+  min-width: 105px;
   text-align: right;
-  padding: 5px 8px;
+  padding: 8px 12px;
 }
 
 .screener-data-table th.col-low,
 .screener-data-table td.col-low {
-  width: 90px;
-  min-width: 90px;
+  width: 115px;
+  min-width: 105px;
   text-align: right;
-  padding: 5px 8px;
+  padding: 8px 12px;
 }
 
 .screener-data-table th.col-oi,
 .screener-data-table td.col-oi {
-  width: 100px;
-  min-width: 100px;
+  width: 135px;
+  min-width: 125px;
   text-align: right;
-  padding: 5px 8px;
+  padding: 8px 12px;
 }
 
 .screener-data-table th.col-oi-change,
 .screener-data-table td.col-oi-change {
-  width: 110px;
-  min-width: 110px;
+  width: 145px;
+  min-width: 135px;
   text-align: right;
-  padding: 5px 8px;
+  padding: 8px 12px;
+}
+
+.screener-data-table th.col-analysis,
+.screener-data-table td.col-analysis {
+  width: 115px;
+  min-width: 105px;
+  text-align: center;
+  padding: 8px 12px;
 }
 
 .oi-buildup-tag {
