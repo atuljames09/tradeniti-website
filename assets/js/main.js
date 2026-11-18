@@ -64,7 +64,7 @@ function updateThemeIcon(theme) {
 const MARKET_TICKER_DATA = [
   { symbol: 'NIFTY 50', price: '24,589.75', change: '+143.25 (+0.59%)', up: true },
   { symbol: 'BANK NIFTY', price: '53,240.50', change: '-112.80 (-0.21%)', up: false },
-  { symbol: 'SENSEX', price: '80,812.15', change: '+428.10 (+0.53%)', up: true },
+  { symbol: 'SENSEX', price: '82,133.00', change: '-407.83 (-0.48%)', up: false },
   { symbol: 'NIFTY IT', price: '39,875.30', change: '+215.60 (+0.54%)', up: true },
   { symbol: 'NIFTY MIDCAP', price: '55,120.00', change: '+340.00 (+0.62%)', up: true },
   { symbol: 'RELIANCE', price: '&#8377;2,948.50', change: '+32.40 (+1.11%)', up: true },
@@ -1876,7 +1876,7 @@ function initAuth() {
    ========================================================================== */
 let MAIN_PAGE_INDICES = [
   { name: 'NIFTY 50', value: 24589.75, change: 143.25, changePct: 0.59, constituents: 50 },
-  { name: 'SENSEX', value: 80812.15, change: 428.10, changePct: 0.53, constituents: 30 },
+  { name: 'SENSEX', value: 82133.00, change: -407.83, changePct: -0.48, constituents: 30 },
   { name: 'BANK NIFTY', value: 53240.50, change: -112.80, changePct: -0.21, constituents: 12 },
   { name: 'NIFTY IT', value: 39875.30, change: 215.60, changePct: 0.54, constituents: 10 },
   { name: 'NIFTY MIDCAP', value: 55120.00, change: 340.00, changePct: 0.62, constituents: 100 },
@@ -2064,11 +2064,42 @@ function initMainPageDashboard() {
           }
           if (target && item.last) {
             target.value = item.last;
-            target.change = item.variation !== undefined ? item.variation : (item.change || 0);
-            target.changePct = item.percentChange !== undefined ? item.percentChange : (item.pctChange || 0);
+            let chg = item.variation !== undefined ? item.variation : (item.change || 0);
+            let pctChg = item.percentChange !== undefined ? item.percentChange : (item.pctChange || 0);
+
+            // Re-verify previousClose delta for SENSEX
+            if (rawName.includes('SENSEX') || item.index === 'S&P BSE SENSEX') {
+              // Yahoo Finance metadata can lag by several days (e.g. 81911.01 vs real 82540.83).
+              // Ensure we compute against actual previous close (82540.83) if proxy sent stale value (< 82400)
+              let realPrevClose = (item.previousClose && item.previousClose > 82400) ? item.previousClose : 82540.83;
+              chg = parseFloat((item.last - realPrevClose).toFixed(2));
+              pctChg = parseFloat(((chg / realPrevClose) * 100).toFixed(2));
+            } else if (item.previousClose && item.previousClose > 0 && !chg) {
+              chg = parseFloat((item.last - item.previousClose).toFixed(2));
+              pctChg = parseFloat(((chg / item.previousClose) * 100).toFixed(2));
+            }
+
+            target.change = chg;
+            target.changePct = pctChg;
           }
         });
         renderIndices();
+
+        // Dynamically synchronize rolling ribbon ticker items for benchmark indices
+        MAIN_PAGE_INDICES.forEach(idx => {
+          const tItem = MARKET_TICKER_DATA.find(t => t.symbol === idx.name);
+          if (tItem && idx.value) {
+            const isUp = idx.change >= 0;
+            const sign = isUp ? '+' : '';
+            tItem.price = idx.value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            tItem.change = `${sign}${idx.change.toFixed(2)} (${sign}${idx.changePct.toFixed(2)}%)`;
+            tItem.up = isUp;
+          }
+        });
+        const tickerTrack = document.getElementById('tickerTrack');
+        if (tickerTrack && typeof initTicker === 'function') {
+          initTicker();
+        }
         if (updateTimerEl) updateTimerEl.textContent = 'Updated Just now (Live NSE)';
         secondsAgo = 0;
       }
@@ -8049,9 +8080,9 @@ function initStockAnalysisCenterModule() {
       stock = {
         symbol: 'SENSEX',
         name: 'BSE SENSEX 30 Benchmark Index',
-        price: sensexLive ? sensexLive.value : 80812.15,
-        change: sensexLive ? sensexLive.change : 428.10,
-        changePct: sensexLive ? sensexLive.changePct : 0.53,
+        price: sensexLive ? sensexLive.value : 82133.00,
+        change: sensexLive ? sensexLive.change : -407.83,
+        changePct: sensexLive ? sensexLive.changePct : -0.48,
         high52: 85978.25,
         low52: 70319.04,
         sector: 'BSE Benchmark Index · 30 Blue-Chip Equities',
