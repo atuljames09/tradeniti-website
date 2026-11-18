@@ -5575,22 +5575,29 @@ function initSidebarDrawer() {
 
   let activeFiiDiiFilter = 'all';
 
-  // Seed recent market sessions up to current date (05-Nov-2026)
+  // Seed recent market sessions up to latest trading session (17-Nov-2026)
   const SEED_FIIDII_ENTRIES = [
+    { date: "17-Nov-2026", niftyClose: "25387.40", niftyChangePct: 0.38, fiiDiiNet: 4392.31, fiiNet: 4195.38, diiNet: 196.93 },
+    { date: "16-Nov-2026", niftyClose: "25291.10", niftyChangePct: 0.58, fiiDiiNet: 1345.63, fiiNet: 4864.68, diiNet: -3519.05 },
+    { date: "13-Nov-2026", niftyClose: "25144.30", niftyChangePct: -0.61, fiiDiiNet: 3482.97, fiiNet: 5736.55, diiNet: -2253.58 },
+    { date: "12-Nov-2026", niftyClose: "25299.35", niftyChangePct: 0.18, fiiDiiNet: 1499.43, fiiNet: 7830.60, diiNet: -6331.17 },
+    { date: "11-Nov-2026", niftyClose: "25255.05", niftyChangePct: 0.84, fiiDiiNet: 4128.80, fiiNet: 12563.33, diiNet: -8434.53 },
+    { date: "09-Nov-2026", niftyClose: "25044.65", niftyChangePct: 0.06, fiiDiiNet: 39.69, fiiNet: 7212.22, diiNet: -7172.53 },
+    { date: "06-Nov-2026", niftyClose: "25030.35", niftyChangePct: 2.01, fiiDiiNet: 7781.12, fiiNet: 13749.82, diiNet: -5968.70 },
     { date: "05-Nov-2026", niftyClose: "24536.60", niftyChangePct: 2.40, fiiDiiNet: 4530.14, fiiNet: 14974.68, diiNet: -10444.54 },
-    { date: "04-Nov-2026", niftyClose: "23960.60", niftyChangePct: 0.42, fiiDiiNet: 339.70, fiiNet: -2840.50, diiNet: 3180.20 },
-    { date: "03-Nov-2026", niftyClose: "23860.20", niftyChangePct: 1.12, fiiDiiNet: 2310.70, fiiNet: 1420.30, diiNet: 890.40 },
-    { date: "02-Nov-2026", niftyClose: "23595.80", niftyChangePct: 2.35, fiiDiiNet: 3361.05, fiiNet: 2110.45, diiNet: 1250.60 },
+    { date: "04-Nov-2026", niftyClose: "23960.60", niftyChangePct: 0.63, fiiDiiNet: 3571.80, fiiNet: 7284.03, diiNet: -3712.23 },
+    { date: "03-Nov-2026", niftyClose: "23810.85", niftyChangePct: 1.58, fiiDiiNet: 3157.96, fiiNet: 6836.81, diiNet: -3678.85 },
+    { date: "02-Nov-2026", niftyClose: "23440.80", niftyChangePct: 1.68, fiiDiiNet: 2722.48, fiiNet: 3114.68, diiNet: -392.20 },
     { date: "30-Oct-2026", niftyClose: "23053.10", niftyChangePct: 0.51, fiiDiiNet: 2781.03, fiiNet: 3598.54, diiNet: -817.51 },
-    { date: "29-Oct-2026", niftyClose: "22936.75", niftyChangePct: 0.42, fiiDiiNet: 878.65, fiiNet: -2143.80, diiNet: 3022.45 },
-    { date: "28-Oct-2026", niftyClose: "22840.10", niftyChangePct: -0.35, fiiDiiNet: -616.60, fiiNet: -3865.20, diiNet: 3248.60 },
-    { date: "27-Oct-2026", niftyClose: "22920.45", niftyChangePct: 0.65, fiiDiiNet: 934.90, fiiNet: -1250.40, diiNet: 2185.30 },
-    { date: "26-Oct-2026", niftyClose: "22772.30", niftyChangePct: -0.45, fiiDiiNet: -249.25, fiiNet: -4120.15, diiNet: 3870.90 },
-    { date: "23-Oct-2026", niftyClose: "22875.60", niftyChangePct: 0.28, fiiDiiNet: 429.70, fiiNet: -2980.50, diiNet: 3410.20 },
-    { date: "22-Oct-2026", niftyClose: "22812.10", niftyChangePct: -0.52, fiiDiiNet: -284.80, fiiNet: -3410.60, diiNet: 3125.80 },
-    { date: "21-Oct-2026", niftyClose: "22931.40", niftyChangePct: 0.18, fiiDiiNet: 470.25, fiiNet: -1870.25, diiNet: 2340.50 },
+    { date: "29-Oct-2026", niftyClose: "22936.75", niftyChangePct: 1.05, fiiDiiNet: 878.65, fiiNet: -2143.80, diiNet: 3022.45 },
+    { date: "28-Oct-2026", niftyClose: "22698.85", niftyChangePct: -0.22, fiiDiiNet: -616.60, fiiNet: -3865.20, diiNet: 3248.60 },
+    { date: "27-Oct-2026", niftyClose: "22749.75", niftyChangePct: -0.02, fiiDiiNet: 934.90, fiiNet: -1250.40, diiNet: 2185.30 },
+    { date: "26-Oct-2026", niftyClose: "22753.20", niftyChangePct: 0.68, fiiDiiNet: -249.25, fiiNet: -4120.15, diiNet: 3870.90 },
+    { date: "23-Oct-2026", niftyClose: "22600.00", niftyChangePct: -0.39, fiiDiiNet: 429.70, fiiNet: -2980.50, diiNet: 3410.20 },
+    { date: "22-Oct-2026", niftyClose: "22687.65", niftyChangePct: -0.54, fiiDiiNet: -284.80, fiiNet: -3410.60, diiNet: 3125.80 },
+    { date: "21-Oct-2026", niftyClose: "22811.35", niftyChangePct: -0.34, fiiDiiNet: 470.25, fiiNet: -1870.25, diiNet: 2340.50 },
     { date: "20-Oct-2026", niftyClose: "22890.80", niftyChangePct: -0.68, fiiDiiNet: -409.75, fiiNet: -4520.10, diiNet: 4110.35 },
-    { date: "19-Oct-2026", niftyClose: "23047.50", niftyChangePct: 0.32, fiiDiiNet: 639.60, fiiNet: -1640.80, diiNet: 2280.40 },
+    { date: "19-Oct-2026", niftyClose: "22888.95", niftyChangePct: 0.32, fiiDiiNet: 639.60, fiiNet: -1640.80, diiNet: 2280.40 },
     { date: "16-Oct-2026", niftyClose: "22974.20", niftyChangePct: -0.39, fiiDiiNet: -330.30, fiiNet: -3280.45, diiNet: 2950.15 },
     { date: "15-Oct-2026", niftyClose: "23064.10", niftyChangePct: 0.48, fiiDiiNet: 709.80, fiiNet: -1450.90, diiNet: 2160.70 },
     { date: "14-Oct-2026", niftyClose: "22954.30", niftyChangePct: -0.55, fiiDiiNet: -329.80, fiiNet: -3980.20, diiNet: 3650.40 },
@@ -5626,7 +5633,12 @@ function initSidebarDrawer() {
     } else {
       // Ensure all seed dates are present in history without wiping out newer live dates
       SEED_FIIDII_ENTRIES.forEach(seed => {
-        if (!entries.some(e => e.date === seed.date)) {
+        const idx = entries.findIndex(e => e.date === seed.date);
+        if (idx >= 0) {
+          if (!entries[idx].niftyClose || entries[idx].niftyClose === '—') {
+            entries[idx] = { ...entries[idx], ...seed };
+          }
+        } else {
           entries.push(seed);
         }
       });
@@ -5828,6 +5840,34 @@ function initSidebarDrawer() {
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
+          // Format A: Array of structured daily sessions from updated /api/fiidii
+          if (data[0] && data[0].date && (data[0].fiiNet !== undefined || data[0].fiiDiiNet !== undefined)) {
+            const entries = getFiiDiiEntries();
+            data.forEach(item => {
+              const idx = entries.findIndex(e => e.date === item.date);
+              if (idx >= 0) {
+                entries[idx] = { ...entries[idx], ...item };
+              } else {
+                entries.push(item);
+              }
+            });
+            entries.sort((a, b) => {
+              const dateA = new Date(a.date.replace(/-/g, ' '));
+              const dateB = new Date(b.date.replace(/-/g, ' '));
+              return dateB - dateA;
+            });
+            saveFiiDiiEntries(entries);
+            fiidiiLastSyncTime = new Date();
+            fiidiiSecondsAgo = 0;
+            updateFiiDiiTimestampUI();
+            renderFiiDiiTable();
+            if (!isAuto && typeof showToast === 'function') {
+              showToast(`Live FII/DII sessions updated for ${entries[0].date}!`, '\uD83D\uDCCA');
+            }
+            return;
+          }
+
+          // Format B: Raw NSE category array
           const diiItem = data.find(d => d.category === 'DII');
           const fiiItem = data.find(d => d.category === 'FII/FPI' || d.category === 'FII');
           if (diiItem || fiiItem) {
